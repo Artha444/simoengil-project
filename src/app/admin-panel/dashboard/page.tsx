@@ -18,7 +18,9 @@ import {
   Sparkles, 
   AlertTriangle,
   List,
-  PlusCircle
+  PlusCircle,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -37,6 +39,7 @@ export default function AdminDashboardPage() {
   const [description, setDescription] = useState('');
   const [formVariants, setFormVariants] = useState<ProductVariant[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Platform Links & Prices
   const [shopeeLink, setShopeeLink] = useState('');
@@ -60,6 +63,7 @@ export default function AdminDashboardPage() {
   const [newCategoryInput, setNewCategoryInput] = useState('');
   // Tab State
   const [activeTab, setActiveTab] = useState<'katalog' | 'halaman'>('katalog');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Site Settings States
   const [siteSettings, setSiteSettings] = useState<any>({});
@@ -365,6 +369,35 @@ export default function AdminDashboardPage() {
     setFormVariants(formVariants.filter((_, i) => i !== index));
   };
 
+  // Upload Image Handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setter(data.url);
+      } else {
+        alert(data.error || 'Gagal mengunggah gambar');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan saat mengunggah gambar');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Save / Update logic
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -560,18 +593,45 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col lg:flex-row">
       
+      {/* MOBILE TOP NAVBAR */}
+      <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-pink-100/80 flex items-center justify-center text-pink-500 font-bold text-sm shadow-sm border border-pink-200/20">🧸</div>
+          <span className="font-black text-sm text-slate-800">Admin Simoengil</span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        >
+          {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* BACKDROP FOR MOBILE SIDEBAR */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-full lg:w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col justify-between">
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col justify-between transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div>
-          {/* Sidebar Brand header */}
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-pink-100/80 flex items-center justify-center text-pink-500 font-bold text-lg shadow-sm border border-pink-200/20">
-              🧸
+          {/* Sidebar Brand header (Desktop only or shown inside sidebar) */}
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between lg:justify-start gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-pink-100/80 flex items-center justify-center text-pink-500 font-bold text-lg shadow-sm border border-pink-200/20">
+                🧸
+              </div>
+              <div>
+                <span className="font-black text-sm text-slate-800 tracking-tight block">Simoengil</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Admin Panel</span>
+              </div>
             </div>
-            <div>
-              <span className="font-black text-sm text-slate-800 tracking-tight block">Simoengil</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Admin Panel</span>
-            </div>
+            <button className="lg:hidden p-1 text-slate-400 hover:text-slate-600" onClick={() => setIsSidebarOpen(false)}>
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Navigation Links */}
@@ -624,7 +684,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 p-6 lg:p-10 overflow-y-auto max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-4 lg:p-10 overflow-y-auto max-w-7xl mx-auto w-full">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -666,7 +726,7 @@ export default function AdminDashboardPage() {
 
               {/* Table wrapper */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/30">
                       <th className="py-4 px-5">Boneka</th>
@@ -859,16 +919,24 @@ export default function AdminDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      URL Gambar Utama Produk
+                      Gambar Utama Produk
                     </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="/images/plushie_teddy.png"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="/images/plushie_teddy.png"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, setImageUrl)}
+                        className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
@@ -1455,8 +1523,11 @@ export default function AdminDashboardPage() {
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Logo</label>
-                      <input type="text" value={logoImageUrl} onChange={(e) => setLogoImageUrl(e.target.value)} className="w-full md:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="/images/my-logo.png" />
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Logo</label>
+                      <div className="flex flex-col xl:flex-row gap-2">
+                        <input type="text" value={logoImageUrl} onChange={(e) => setLogoImageUrl(e.target.value)} className="w-full xl:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="/images/my-logo.png" />
+                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setLogoImageUrl)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1474,12 +1545,18 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Hero Utama</label>
-                      <input type="text" value={heroImage1} onChange={(e) => setHeroImage1(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Hero Utama</label>
+                      <div className="flex flex-col gap-2">
+                        <input type="text" value={heroImage1} onChange={(e) => setHeroImage1(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setHeroImage1)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Hero Kecil</label>
-                      <input type="text" value={heroImage2} onChange={(e) => setHeroImage2(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Hero Kecil</label>
+                      <div className="flex flex-col gap-2">
+                        <input type="text" value={heroImage2} onChange={(e) => setHeroImage2(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setHeroImage2)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
