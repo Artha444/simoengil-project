@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
@@ -18,20 +17,38 @@ export async function POST(request: Request) {
     const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
     const filename = `${uniqueSuffix}-${originalName}`;
     
-    // Path to save the image
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Try to upload to Supabase Storage in a bucket named "images"
+    const { data, error } = await supabase.storage
+      .from('images')
+      .upload(filename, buffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Supabase Storage Error:', error);
+      
+      // Detailed error for user
+      if (error.message.includes('Bucket not found')) {
+        return NextResponse.json({ 
+          error: 'Bucket "images" belum dibuat di Supabase Storage Anda. Silakan buat bucket bernama "images" (dan set public) di dashboard Supabase.' 
+        }, { status: 500 });
+      }
+      
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     
-    // Ensure the directory exists
-    await fs.mkdir(uploadDir, { recursive: true });
-    
-    // Write the file
-    const filepath = path.join(uploadDir, filename);
-    await fs.writeFile(filepath, buffer);
-    
-    // Return the public URL
-    const publicUrl = `/uploads/${filename}`;
-    
-    return NextResponse.json({ url: publicUrl, success: true });
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('images')
+      .getPublicUrl(filename);
+      
+    if (!publicUrlData.publicUrl) {
+      return NextResponse.json({ error: 'Gagal mendapatkan URL publik gambar.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ url: publicUrlData.publicUrl, success: true });
   } catch (error) {
     console.error('Upload Error:', error);
     return NextResponse.json({ error: 'Failed to upload image.' }, { status: 500 });
