@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   List,
   PlusCircle,
+  Upload,
   Menu,
   X
 } from 'lucide-react';
@@ -922,21 +923,24 @@ export default function AdminDashboardPage() {
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Gambar Utama Produk
                     </label>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex items-center gap-2 w-full">
                       <input
                         type="text"
                         required
                         placeholder="/images/plushie_teddy.png"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
+                        className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
                       />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileUpload(e, setImageUrl)}
-                        className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer"
-                      />
+                      <label title="Upload Foto" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-4 h-4" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e, setImageUrl)}
+                        />
+                      </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -997,6 +1001,21 @@ export default function AdminDashboardPage() {
                               <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
                             </div>
                           )}
+                          <label className="shrink-0 p-2 bg-slate-100 hover:bg-pink-100 text-slate-400 hover:text-pink-600 rounded-lg transition-colors cursor-pointer" title="Upload Foto Tambahan">
+                            <Upload className="w-3.5 h-3.5" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileUpload(e, (url) => {
+                                  const updated = [...additionalImages];
+                                  updated[idx] = url;
+                                  setAdditionalImages(updated);
+                                });
+                              }}
+                            />
+                          </label>
                           <button
                             type="button"
                             onClick={() => setAdditionalImages(additionalImages.filter((_, i) => i !== idx))}
@@ -1525,9 +1544,12 @@ export default function AdminDashboardPage() {
                   ) : (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Logo</label>
-                      <div className="flex flex-col xl:flex-row gap-2">
-                        <input type="text" value={logoImageUrl} onChange={(e) => setLogoImageUrl(e.target.value)} className="w-full xl:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="/images/my-logo.png" />
-                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setLogoImageUrl)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      <div className="flex items-center gap-2 w-full">
+                        <input type="text" value={logoImageUrl} onChange={(e) => setLogoImageUrl(e.target.value)} className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="/images/my-logo.png" />
+                        <label title="Upload Logo" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                          <Upload className="w-4 h-4" />
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setLogoImageUrl)} />
+                        </label>
                       </div>
                     </div>
                   )}
@@ -1547,16 +1569,22 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Hero Utama</label>
-                      <div className="flex flex-col gap-2">
-                        <input type="text" value={heroImage1} onChange={(e) => setHeroImage1(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
-                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setHeroImage1)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      <div className="flex items-center gap-2 w-full">
+                        <input type="text" value={heroImage1} onChange={(e) => setHeroImage1(e.target.value)} className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                        <label title="Upload Hero 1" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                          <Upload className="w-4 h-4" />
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setHeroImage1)} />
+                        </label>
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gambar Hero Kecil</label>
-                      <div className="flex flex-col gap-2">
-                        <input type="text" value={heroImage2} onChange={(e) => setHeroImage2(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
-                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setHeroImage2)} className="text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100 cursor-pointer" />
+                      <div className="flex items-center gap-2 w-full">
+                        <input type="text" value={heroImage2} onChange={(e) => setHeroImage2(e.target.value)} className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                        <label title="Upload Hero 2" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                          <Upload className="w-4 h-4" />
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setHeroImage2)} />
+                        </label>
                       </div>
                     </div>
                   </div>

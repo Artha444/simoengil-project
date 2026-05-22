@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a Supabase admin client to bypass RLS for server-side uploads
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(request: Request) {
   try {
@@ -17,8 +22,8 @@ export async function POST(request: Request) {
     const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
     const filename = `${uniqueSuffix}-${originalName}`;
     
-    // Try to upload to Supabase Storage in a bucket named "images"
-    const { data, error } = await supabase.storage
+    // Try to upload to Supabase Storage in a bucket named "images" bypassing RLS
+    const { data, error } = await supabaseAdmin.storage
       .from('images')
       .upload(filename, buffer, {
         contentType: file.type,
@@ -40,7 +45,7 @@ export async function POST(request: Request) {
     }
     
     // Get public URL
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseAdmin.storage
       .from('images')
       .getPublicUrl(filename);
       
