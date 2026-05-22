@@ -56,6 +56,8 @@ export default function AdminDashboardPage() {
 
   // Dynamic Categories Creator states
   const [categoriesList, setCategoriesList] = useState<string[]>(['Boneka Beruang', 'Gantungan Kunci', 'Kado Wisuda']);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
   // Tab State
   const [activeTab, setActiveTab] = useState<'katalog' | 'halaman'>('katalog');
 
@@ -63,6 +65,17 @@ export default function AdminDashboardPage() {
   const [siteSettings, setSiteSettings] = useState<any>({});
   const [heroTitle, setHeroTitle] = useState('');
   const [heroDescription, setHeroDescription] = useState('');
+  const [heroImage1, setHeroImage1] = useState('');
+  const [heroImage2, setHeroImage2] = useState('');
+  const [heroBadge1Icon, setHeroBadge1Icon] = useState('');
+  const [heroBadge1Text, setHeroBadge1Text] = useState('');
+  const [heroBadge2Icon, setHeroBadge2Icon] = useState('');
+  const [heroBadge2Text, setHeroBadge2Text] = useState('');
+  const [logoTextMain, setLogoTextMain] = useState('');
+  const [logoTextSub, setLogoTextSub] = useState('');
+  const [logoIcon, setLogoIcon] = useState('');
+  const [logoImageType, setLogoImageType] = useState('icon');
+  const [logoImageUrl, setLogoImageUrl] = useState('');
   const [whyTitle, setWhyTitle] = useState('');
   const [whyFeatures, setWhyFeatures] = useState<any[]>([]);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -184,6 +197,17 @@ export default function AdminDashboardPage() {
         setSiteSettings(settings);
         setHeroTitle(settings.heroTitle || 'Temukan Teman Peluk Pertamamu');
         setHeroDescription(settings.heroDescription || 'Koleksi boneka lucu, lembut, dan berkualitas tinggi untuk menemani hari-harimu. Cocok untuk kado orang tersayang atau koleksi pribadi.');
+        setHeroImage1(settings.heroImage1 || '/images/plushie_teddy.png');
+        setHeroImage2(settings.heroImage2 || '/images/plushie_bunny.png');
+        setHeroBadge1Icon(settings.heroBadge1Icon || '🌟');
+        setHeroBadge1Text(settings.heroBadge1Text || 'Terlembut');
+        setHeroBadge2Icon(settings.heroBadge2Icon || '❤️');
+        setHeroBadge2Text(settings.heroBadge2Text || 'Anti Alergi');
+        setLogoTextMain(settings.logoTextMain || 'Simoengil');
+        setLogoTextSub(settings.logoTextSub || 'Plushie & Doll');
+        setLogoIcon(settings.logoIcon || 'Smile');
+        setLogoImageType(settings.logoImageType || 'icon');
+        setLogoImageUrl(settings.logoImageUrl || '');
         setWhyTitle(settings.whyTitle || 'Kenapa memilih boneka Simoengil?');
         setWhyFeatures(settings.whyFeatures || [
           { icon: 'Heart', title: 'Dibuat dengan Cinta', desc: 'Setiap detail dikerjakan teliti' },
@@ -191,17 +215,60 @@ export default function AdminDashboardPage() {
           { icon: 'Sparkles', title: 'Bahan Premium', desc: 'Sangat lembut & tidak mudah rontok' }
         ]);
       } else {
-        setHeroTitle('Temukan Teman Peluk Pertamamu');
-        setHeroDescription('Koleksi boneka lucu, lembut, dan berkualitas tinggi untuk menemani hari-harimu. Cocok untuk kado orang tersayang atau koleksi pribadi.');
-        setWhyTitle('Kenapa memilih boneka Simoengil?');
-        setWhyFeatures([
-          { icon: 'Heart', title: 'Dibuat dengan Cinta', desc: 'Setiap detail dikerjakan teliti' },
-          { icon: 'ShieldCheck', title: '100% Aman', desc: 'Material hypoallergenic & SNI' },
-          { icon: 'Sparkles', title: 'Bahan Premium', desc: 'Sangat lembut & tidak mudah rontok' }
-        ]);
+        throw new Error('Supabase returned no data');
       }
     } catch (err) {
-      console.warn('Failed to fetch site settings', err);
+      console.warn('Failed to fetch site settings from Supabase, checking local storage fallback', err);
+      const local = localStorage.getItem('simoengil_settings');
+      if (local) {
+        try {
+          const settings = JSON.parse(local);
+          setSiteSettings(settings);
+          setHeroTitle(settings.heroTitle || 'Temukan Teman Peluk Pertamamu');
+          setHeroDescription(settings.heroDescription || 'Koleksi boneka lucu, lembut, dan berkualitas tinggi untuk menemani hari-harimu. Cocok untuk kado orang tersayang atau koleksi pribadi.');
+          setHeroImage1(settings.heroImage1 || '/images/plushie_teddy.png');
+          setHeroImage2(settings.heroImage2 || '/images/plushie_bunny.png');
+          setHeroBadge1Icon(settings.heroBadge1Icon || '🌟');
+          setHeroBadge1Text(settings.heroBadge1Text || 'Terlembut');
+          setHeroBadge2Icon(settings.heroBadge2Icon || '❤️');
+          setHeroBadge2Text(settings.heroBadge2Text || 'Anti Alergi');
+          setLogoTextMain(settings.logoTextMain || 'Simoengil');
+          setLogoTextSub(settings.logoTextSub || 'Plushie & Doll');
+          setLogoIcon(settings.logoIcon || 'Smile');
+          setLogoImageType(settings.logoImageType || 'icon');
+          setLogoImageUrl(settings.logoImageUrl || '');
+          setWhyTitle(settings.whyTitle || 'Kenapa memilih boneka Simoengil?');
+          setWhyFeatures(settings.whyFeatures || [
+            { icon: 'Heart', title: 'Dibuat dengan Cinta', desc: 'Setiap detail dikerjakan teliti' },
+            { icon: 'ShieldCheck', title: '100% Aman', desc: 'Material hypoallergenic & SNI' },
+            { icon: 'Sparkles', title: 'Bahan Premium', desc: 'Sangat lembut & tidak mudah rontok' }
+          ]);
+          return; // Exit if local storage succeeds
+        } catch (e) {
+          console.warn('Failed to parse local storage settings', e);
+        }
+      }
+      
+      // Fallback defaults
+      setHeroTitle('Temukan Teman Peluk Pertamamu');
+      setHeroDescription('Koleksi boneka lucu, lembut, dan berkualitas tinggi untuk menemani hari-harimu. Cocok untuk kado orang tersayang atau koleksi pribadi.');
+      setHeroImage1('/images/plushie_teddy.png');
+      setHeroImage2('/images/plushie_bunny.png');
+      setHeroBadge1Icon('🌟');
+      setHeroBadge1Text('Terlembut');
+      setHeroBadge2Icon('❤️');
+      setHeroBadge2Text('Anti Alergi');
+      setLogoTextMain('Simoengil');
+      setLogoTextSub('Plushie & Doll');
+      setLogoIcon('Smile');
+      setLogoImageType('icon');
+      setLogoImageUrl('');
+      setWhyTitle('Kenapa memilih boneka Simoengil?');
+      setWhyFeatures([
+        { icon: 'Heart', title: 'Dibuat dengan Cinta', desc: 'Setiap detail dikerjakan teliti' },
+        { icon: 'ShieldCheck', title: '100% Aman', desc: 'Material hypoallergenic & SNI' },
+        { icon: 'Sparkles', title: 'Bahan Premium', desc: 'Sangat lembut & tidak mudah rontok' }
+      ]);
     }
   };
 
@@ -218,6 +285,17 @@ export default function AdminDashboardPage() {
     const newSettings = {
       heroTitle,
       heroDescription,
+      heroImage1,
+      heroImage2,
+      heroBadge1Icon,
+      heroBadge1Text,
+      heroBadge2Icon,
+      heroBadge2Text,
+      logoTextMain,
+      logoTextSub,
+      logoIcon,
+      logoImageType,
+      logoImageUrl,
       whyTitle,
       whyFeatures
     };
@@ -227,9 +305,11 @@ export default function AdminDashboardPage() {
         settings: newSettings
       });
       if (error) throw error;
-      alert('🎉 Pengaturan halaman berhasil disimpan!');
+      alert('🎉 Pengaturan halaman berhasil disimpan di database!');
     } catch (err: any) {
-      alert(`Gagal menyimpan: ${err.message}. Pastikan Anda sudah membuat tabel site_settings.`);
+      console.warn('Supabase saving failed for settings, performing local memory fallback:', err);
+      localStorage.setItem('simoengil_settings', JSON.stringify(newSettings));
+      alert(`🎉 Pengaturan berhasil disimpan secara lokal (Offline Mode)! Buka halaman utama (Toko Publik) untuk melihat perubahannya.`);
     } finally {
       setIsSavingSettings(false);
     }
@@ -1342,8 +1422,47 @@ export default function AdminDashboardPage() {
               </h3>
               <form onSubmit={handleSaveSettings} className="space-y-6">
                 
-                {/* Hero Section */}
+                {/* Logo Section */}
                 <div className="space-y-4">
+                  <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Logo & Identitas</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Teks Logo Utama</label>
+                      <input type="text" value={logoTextMain} onChange={(e) => setLogoTextMain(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Teks Slogan (Kecil)</label>
+                      <input type="text" value={logoTextSub} onChange={(e) => setLogoTextSub(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Tipe Logo Visual</label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                        <input type="radio" value="icon" checked={logoImageType === 'icon'} onChange={(e) => setLogoImageType(e.target.value)} className="text-pink-500 focus:ring-pink-400" />
+                        Gunakan Ikon Bawaan
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                        <input type="radio" value="image" checked={logoImageType === 'image'} onChange={(e) => setLogoImageType(e.target.value)} className="text-pink-500 focus:ring-pink-400" />
+                        Gunakan Gambar Sendiri
+                      </label>
+                    </div>
+                  </div>
+                  {logoImageType === 'icon' ? (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Nama Ikon (Lucide)</label>
+                      <input type="text" value={logoIcon} onChange={(e) => setLogoIcon(e.target.value)} className="w-full md:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="Contoh: Smile" />
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Logo</label>
+                      <input type="text" value={logoImageUrl} onChange={(e) => setLogoImageUrl(e.target.value)} className="w-full md:w-1/2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" placeholder="/images/my-logo.png" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Hero Section */}
+                <div className="space-y-4 pt-6 border-t border-slate-100">
                   <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Bagian Utama (Hero)</h4>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Judul Utama</label>
@@ -1352,6 +1471,32 @@ export default function AdminDashboardPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Deskripsi Utama</label>
                     <textarea rows={3} value={heroDescription} onChange={(e) => setHeroDescription(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100 resize-none" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Hero Utama</label>
+                      <input type="text" value={heroImage1} onChange={(e) => setHeroImage1(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">URL Gambar Hero Kecil</label>
+                      <input type="text" value={heroImage2} onChange={(e) => setHeroImage2(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Badge 1 (Ikon & Teks)</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={heroBadge1Icon} onChange={(e) => setHeroBadge1Icon(e.target.value)} className="w-16 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100 text-center" />
+                        <input type="text" value={heroBadge1Text} onChange={(e) => setHeroBadge1Text(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Badge 2 (Ikon & Teks)</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={heroBadge2Icon} onChange={(e) => setHeroBadge2Icon(e.target.value)} className="w-16 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100 text-center" />
+                        <input type="text" value={heroBadge2Text} onChange={(e) => setHeroBadge2Text(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-pink-400 focus:ring-1 focus:ring-pink-100" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

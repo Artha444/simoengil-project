@@ -40,6 +40,7 @@ export default function Home() {
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<string>('terbaru');
 
   // Site Settings
   const [siteSettings, setSiteSettings] = useState<any>({
@@ -50,7 +51,18 @@ export default function Home() {
       { icon: 'ShieldCheck', title: '100% Dacron Grade A', desc: 'Isian silikon dacron super murni tanpa campuran limbah garmen. Memastikan keempukan tahan bertahun-tahun dan tidak gampang kempes.' },
       { icon: 'RefreshCw', title: 'Bisa Dicuci (Washable)', desc: 'Mudah dibersihkan! Cukup dicuci dengan tangan atau mesin cuci (putaran halus). Dacron akan mengembang kembali begitu kering sempurna.' },
       { icon: 'Smile', title: 'Aman untuk Bayi', desc: 'Kain luar bulu yelvo/spandex hypoallergenic berbulu lembut dan tidak mudah rontok. Lulus uji kualitas aman bagi pernapasan balita.' }
-    ]
+    ],
+    heroImage1: '/images/plushie_teddy.png',
+    heroImage2: '/images/plushie_bunny.png',
+    heroBadge1Icon: '🌟',
+    heroBadge1Text: 'Terlembut',
+    heroBadge2Icon: '❤️',
+    heroBadge2Text: 'Anti Alergi',
+    logoTextMain: 'Simoengil',
+    logoTextSub: 'Plushie & Doll',
+    logoIcon: 'Smile',
+    logoImageType: 'icon', // 'icon' or 'image'
+    logoImageUrl: ''
   });
 
   // Load wishlist from localStorage on mount & Fetch Supabase products & Check Admin Auth
@@ -142,9 +154,23 @@ export default function Home() {
             ...prev,
             ...(data.settings || {})
           }));
+        } else {
+          throw new Error('No data');
         }
       } catch (err) {
-        console.warn('Failed to fetch site settings', err);
+        console.warn('Failed to fetch site settings from Supabase, checking local storage', err);
+        const local = localStorage.getItem('simoengil_settings');
+        if (local) {
+          try {
+            const settings = JSON.parse(local);
+            setSiteSettings(prev => ({
+              ...prev,
+              ...settings
+            }));
+          } catch (e) {
+            console.warn('Failed to parse local settings', e);
+          }
+        }
       }
     };
 
@@ -187,6 +213,10 @@ export default function Home() {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
+  }).sort((a, b) => {
+    if (sortBy === 'termurah') return a.price - b.price;
+    if (sortBy === 'termahal') return b.price - a.price;
+    return 0; // 'terbaru' uses default order
   });
 
   // Get wishlisted product details
@@ -235,7 +265,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-x-hidden selection:bg-pink-100 selection:text-pink-600">
+    <div className="relative min-h-screen flex flex-col overflow-x-clip selection:bg-pink-100 selection:text-pink-600 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
       
       {/* Dynamic Floating Background Elements (Illustrations) */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -278,15 +308,19 @@ export default function Home() {
           
           {/* Logo & Shop Name */}
           <a href="#" className="flex items-center gap-2 group shrink-0">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-400 to-pink-300 flex items-center justify-center shadow-md shadow-pink-400/20 group-hover:scale-105 transition-transform duration-300">
-              <Smile className="w-6 h-6 text-white" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-400 to-pink-300 flex items-center justify-center shadow-md shadow-pink-400/20 group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+              {siteSettings.logoImageType === 'image' && siteSettings.logoImageUrl ? (
+                <img src={siteSettings.logoImageUrl} alt="Shop Logo" className="w-full h-full object-cover" />
+              ) : (
+                <DynamicIcon name={siteSettings.logoIcon || 'Smile'} className="w-6 h-6 text-white" />
+              )}
             </div>
             <div>
               <span className="text-xl font-black text-slate-800 tracking-tight group-hover:text-pink-500 transition-colors">
-                Simoengil
+                {siteSettings.logoTextMain || 'Simoengil'}
               </span>
               <span className="block text-[10px] text-pink-500 font-extrabold uppercase tracking-widest mt-[-2px]">
-                Plushie & Doll
+                {siteSettings.logoTextSub || 'Plushie & Doll'}
               </span>
             </div>
           </a>
@@ -449,26 +483,28 @@ export default function Home() {
           <div className="relative bg-white rounded-3xl p-6 shadow-xl border border-blue-100 w-full max-w-[420px] aspect-square flex items-center justify-center animate-float">
             <div className="absolute inset-0 bg-gradient-to-tr from-pink-50 to-blue-50 rounded-3xl -z-10" />
             <img
-              src="/images/plushie_teddy.png"
+              src={siteSettings.heroImage1 || '/images/plushie_teddy.png'}
               alt="Main Plushie Bear"
               className="w-5/6 h-5/6 object-contain drop-shadow-2xl"
             />
             {/* Small floating badges on hero */}
             <div className="absolute -top-4 -right-4 bg-yellow-100 border border-yellow-200 text-yellow-800 text-xs font-black py-2 px-4 rounded-2xl shadow-sm rotate-6 flex items-center gap-1">
-              <span>🌟</span>
-              <span>Terlembut</span>
+              <span>{siteSettings.heroBadge1Icon || '🌟'}</span>
+              <span>{siteSettings.heroBadge1Text || 'Terlembut'}</span>
             </div>
 
             <div className="absolute -bottom-4 -left-4 bg-white border border-pink-100 text-slate-800 text-xs font-bold py-2.5 px-4 rounded-2xl shadow-md flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 text-[10px]">❤️</div>
-              <span>Anti Alergi</span>
+              <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 text-[10px]">
+                {siteSettings.heroBadge2Icon || '❤️'}
+              </div>
+              <span>{siteSettings.heroBadge2Text || 'Anti Alergi'}</span>
             </div>
           </div>
 
           {/* Secondary smaller floating card */}
           <div className="absolute -bottom-6 right-2 sm:right-6 bg-white rounded-2xl p-3 shadow-lg border border-pink-50 w-36 aspect-square hidden sm:flex items-center justify-center animate-float-slow">
             <img
-              src="/images/plushie_bunny.png"
+              src={siteSettings.heroImage2 || '/images/plushie_bunny.png'}
               alt="Mini Bunny Plushie"
               className="w-5/6 h-5/6 object-contain"
             />
@@ -489,15 +525,18 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting lines for desktop */}
+            <div className="hidden md:block absolute top-24 left-[16.66%] right-[16.66%] h-0.5 bg-gradient-to-r from-blue-200 via-pink-200 to-yellow-200 z-0"></div>
+
             {siteSettings.whyFeatures.map((feat: any, idx: number) => {
               const bgColors = ['bg-blue-50/30 border-blue-100/30', 'bg-pink-50/20 border-pink-100/20', 'bg-yellow-50/30 border-yellow-100/20'];
               const iconColors = ['bg-blue-100 text-blue-600', 'bg-pink-100 text-pink-500', 'bg-yellow-100 text-yellow-600'];
               const colorIdx = idx % 3;
               
               return (
-                <div key={idx} className={`${bgColors[colorIdx]} border rounded-3xl p-6 text-center space-y-4 hover:shadow-md transition-shadow`}>
-                  <div className={`w-12 h-12 rounded-2xl ${iconColors[colorIdx]} flex items-center justify-center mx-auto shadow-xs`}>
+                <div key={idx} className={`${bgColors[colorIdx]} border rounded-3xl p-6 text-center space-y-4 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative z-10 bg-white/60 backdrop-blur-sm group`}>
+                  <div className={`w-12 h-12 rounded-2xl ${iconColors[colorIdx]} flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                     <DynamicIcon name={feat.icon} className="w-6 h-6" />
                   </div>
                   <h3 className="font-extrabold text-slate-800 text-lg">{feat.title}</h3>
@@ -516,18 +555,25 @@ export default function Home() {
         
         {/* Section Title */}
         <div className="text-center max-w-xl mx-auto mb-10 space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 tracking-tight">
-            Katalog Boneka Gemoy
-          </h2>
-          <p className="text-slate-500 text-xs sm:text-sm font-medium">
+          <div className="inline-block relative mt-4">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 tracking-tight relative z-10 px-6 py-2">
+              Katalog Boneka Gemoy
+            </h2>
+            {/* Cute decorative background for text */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-pink-200 via-pink-100 to-blue-200 rounded-3xl blur-md opacity-60 -z-10 rotate-1 animate-pulse"></div>
+            <div className="absolute inset-0 bg-white/60 rounded-3xl border-2 border-pink-300 border-dashed -z-10 rotate-[-1deg]"></div>
+            <Sparkles className="absolute -top-4 -right-2 text-pink-400 w-7 h-7 animate-bounce" />
+            <Heart className="absolute -bottom-3 -left-3 text-blue-400 w-6 h-6 animate-pulse" />
+          </div>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium mt-6">
             Temukan aneka pilihan boneka lucu, gantungan kunci gemas, hingga hampers wisuda kelulusan.
           </p>
         </div>
 
         {/* Categories Tabs & Search Input Row */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
           {/* Categories Tab Badges */}
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center lg:justify-start flex-1">
             {categories.map((category) => (
               <button
                 key={category}
@@ -543,9 +589,20 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Showing Count */}
-          <div className="text-xs font-extrabold text-slate-400 bg-blue-50/50 py-2 px-4 rounded-xl border border-blue-100/50">
-            Menampilkan {filteredProducts.length} Produk
+          {/* Sorting and Count */}
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <div className="hidden sm:block text-xs font-extrabold text-slate-400 bg-white/80 backdrop-blur py-2.5 px-4 rounded-xl border border-blue-100/50 whitespace-nowrap shadow-sm">
+              {filteredProducts.length} Produk
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="flex-1 lg:flex-none py-2.5 px-4 rounded-xl text-xs font-bold bg-white border border-blue-100 text-slate-600 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 shadow-sm cursor-pointer hover:scale-105 hover:shadow-md hover:border-pink-300 transition-all duration-300"
+            >
+              <option value="terbaru">✨ Terbaru</option>
+              <option value="termurah">💵 Termurah</option>
+              <option value="termahal">💎 Termahal</option>
+            </select>
           </div>
         </div>
 
