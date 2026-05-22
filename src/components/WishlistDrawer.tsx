@@ -125,6 +125,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                     <Image
                       src={item.image}
                       alt={item.name}
+                      referrerPolicy="no-referrer"
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />

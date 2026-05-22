@@ -11,7 +11,6 @@ interface ProductCardProps {
   onWishlistToggle: (id: string) => void;
   onDetailClick: (product: Product) => void;
 }
-
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isWishlisted,
@@ -164,6 +163,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Menggunakan img standar untuk mencegah runtime unconfigured host error */}
           <img
             src={product.image}
+            referrerPolicy="no-referrer"
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-108 group-hover:animate-bobble transition-transform duration-700 ease-out origin-bottom"
           />

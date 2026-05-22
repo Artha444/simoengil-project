@@ -219,7 +219,8 @@ export default function AdminDashboardPage() {
           { icon: 'Sparkles', title: 'Bahan Premium', desc: 'Sangat lembut & tidak mudah rontok' }
         ]);
       } else {
-        throw new Error('Supabase returned no data');
+        // No data in Supabase — silently fall through to localStorage fallback
+        throw new Error('No settings in Supabase');
       }
     } catch (err) {
       console.warn('Failed to fetch site settings from Supabase, checking local storage fallback', err);

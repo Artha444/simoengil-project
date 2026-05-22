@@ -97,6 +97,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-pink-100/30 flex items-center justify-center">
             <img
               src={activeImage || product.image}
+              referrerPolicy="no-referrer"
               alt={product.name}
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -116,6 +117,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 >
                   <img
                     src={imgSrc}
+                    referrerPolicy="no-referrer"
                     alt={`Preview ${index + 1}`}
                     className="absolute inset-0 w-full h-full object-cover"
                   />

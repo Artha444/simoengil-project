@@ -620,6 +620,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                       >
                         <img
                           src={imgSrc}
+                          referrerPolicy="no-referrer"
                           alt={`Detail View ${index + 1}`}
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -642,6 +643,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                     <img
                       key={activeImage || product.image} // Force re-render on image change for smooth fade
                       src={activeImage || product.image}
+                      referrerPolicy="no-referrer"
                       alt={product.name}
                       style={{
                         transformOrigin: zoomOrigin,
