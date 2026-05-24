@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -30,6 +31,15 @@ export default function RootLayout({
     <html lang="id" className={`${poppins.variable} ${inter.variable} scroll-smooth h-full`}>
       <body className="min-h-full flex flex-col font-sans text-[#2C2C2C] antialiased selection:bg-pink-100 selection:text-pink-600 relative overflow-x-hidden">
         
+        {/* Midtrans Snap JS SDK */}
+        <Script
+          src={process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true' 
+            ? "https://app.midtrans.com/snap/snap.js" 
+            : "https://app.sandbox.midtrans.com/snap/snap.js"}
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''}
+          strategy="lazyOnload"
+        />
+
         {/* Global Fixed Background */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           {/* Base Soft Gradient */}

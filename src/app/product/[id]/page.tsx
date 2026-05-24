@@ -9,6 +9,7 @@ import {
   Share2, 
   MessageSquare, 
   ShoppingBag, 
+  ShoppingCart,
   Star, 
   CheckCircle,
   Sparkles,
@@ -19,7 +20,7 @@ import {
   Droplet,
   ShieldCheck
 } from 'lucide-react';
-import { PRODUCTS, Product } from '@/data/products';
+import { PRODUCTS, Product, type CartItem } from '@/data/products';
 import { supabase } from '@/lib/supabase';
 import confetti from 'canvas-confetti';
 import { WishlistDrawer } from '@/components/WishlistDrawer';
@@ -39,11 +40,12 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [activeImage, setActiveImage] = useState<string>('');
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
   const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
   const [whatsappSent, setWhatsappSent] = useState<boolean>(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   // Zoom and Accordion States
   const [zoomOrigin, setZoomOrigin] = useState<string>('center');
@@ -79,13 +81,13 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   // Load product from Supabase & All Products & Check Admin Session & Wishlist
   useEffect(() => {
-    // 1. Wishlist from localStorage
-    const savedWishlist = localStorage.getItem('simoengil_wishlist');
-    if (savedWishlist) {
+    // 1. Cart from localStorage
+    const savedCart = localStorage.getItem('simoengil_cart');
+    if (savedCart) {
       try {
-        setWishlist(JSON.parse(savedWishlist));
+        setCart(JSON.parse(savedCart));
       } catch (e) {
-        console.error('Failed to load wishlist', e);
+        console.error('Failed to load cart', e);
       }
     }
 
@@ -114,34 +116,22 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             rating: Number(data.rating || 5.0),
             reviewsCount: Number(data.reviews_count || 0),
             shopeeLink: data.shopee_link || '',
-            tokopediaLink: data.tokopedia_link || '',
-            lazadaLink: specs.lazadaLink || data.lazadaLink || '',
-            tiktokLink: specs.tiktokLink || data.tiktokLink || '',
             shopeePrice: specs.shopeePrice || data.shopeePrice || undefined,
-            tokopediaPrice: specs.tokopediaPrice || data.tokopediaPrice || undefined,
-            lazadaPrice: specs.lazadaPrice || data.lazadaPrice || undefined,
-            tiktokPrice: specs.tiktokPrice || data.tiktokPrice || undefined,
             shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-            tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-            lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-            tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
             images: specs.images || data.images || [],
             specifications: {
               material: specs.material || '100% Premium Dacron & Kain Rasfur',
               size: specs.size || 'Standard',
               washing: specs.washing || 'Bisa dicuci mesin',
               safeForKids: specs.safeForKids !== undefined ? specs.safeForKids : true,
-              lazadaLink: specs.lazadaLink || '',
-              tiktokLink: specs.tiktokLink || '',
               shopeePrice: specs.shopeePrice || undefined,
-              tokopediaPrice: specs.tokopediaPrice || undefined,
-              lazadaPrice: specs.lazadaPrice || undefined,
-              tiktokPrice: specs.tiktokPrice || undefined,
               shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-              tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-              lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-              tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
               images: specs.images || [],
+              features: specs.features || [],
+              soldCount: specs.soldCount || 0,
+              testimonials: specs.testimonials || [],
+              types: specs.types || (data.variants ? Array.from(new Set(data.variants.map((v:any) => v.type).filter(Boolean))).map(t => ({ name: t as string, extraPrice: 0 })) : undefined),
+              sizes: specs.sizes || (data.variants ? Array.from(new Set(data.variants.map((v:any) => v.size).filter(Boolean))).map(s => ({ name: s as string, extraPrice: 0 })) : undefined),
             },
             variants: (data.variants || []).map((v: any) => ({
               ...v,
@@ -154,6 +144,16 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           setProduct(mappedProduct);
           setActiveImage(mappedProduct.image);
         } else {
+          const localMockStr = localStorage.getItem('simoengil_mock_products');
+          if (localMockStr) {
+            const localMock = JSON.parse(localMockStr);
+            const localProd = localMock.find((p: any) => p.id === id);
+            if (localProd) {
+              setProduct(localProd);
+              setActiveImage(localProd.image);
+              return;
+            }
+          }
           const localProd = PRODUCTS.find((p) => p.id === id);
           if (localProd) {
             setProduct(localProd);
@@ -162,6 +162,16 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         }
       } catch (err) {
         console.warn('Failed to fetch product from Supabase, falling back to local list:', err);
+        const localMockStr = localStorage.getItem('simoengil_mock_products');
+        if (localMockStr) {
+          const localMock = JSON.parse(localMockStr);
+          const localProd = localMock.find((p: any) => p.id === id);
+          if (localProd) {
+            setProduct(localProd);
+            setActiveImage(localProd.image);
+            return;
+          }
+        }
         const localProd = PRODUCTS.find((p) => p.id === id);
         if (localProd) {
           setProduct(localProd);
@@ -191,46 +201,45 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               rating: Number(item.rating || 5.0),
               reviewsCount: Number(item.reviews_count || 0),
               shopeeLink: item.shopee_link || '',
-              tokopediaLink: item.tokopedia_link || '',
-              lazadaLink: specs.lazadaLink || item.lazadaLink || '',
-              tiktokLink: specs.tiktokLink || item.tiktokLink || '',
               shopeePrice: specs.shopeePrice || item.shopeePrice || undefined,
-              tokopediaPrice: specs.tokopediaPrice || item.tokopediaPrice || undefined,
-              lazadaPrice: specs.lazadaPrice || item.lazadaPrice || undefined,
-              tiktokPrice: specs.tiktokPrice || item.tiktokPrice || undefined,
               shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-              tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-              lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-              tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
               specifications: {
                 material: specs.material || '100% Premium Dacron & Kain Rasfur',
                 size: specs.size || 'Standard',
                 washing: specs.washing || 'Bisa dicuci mesin',
                 safeForKids: specs.safeForKids !== undefined ? specs.safeForKids : true,
-                lazadaLink: specs.lazadaLink || '',
-                tiktokLink: specs.tiktokLink || '',
                 shopeePrice: specs.shopeePrice || undefined,
-                tokopediaPrice: specs.tokopediaPrice || undefined,
-                lazadaPrice: specs.lazadaPrice || undefined,
-                tiktokPrice: specs.tiktokPrice || undefined,
                 shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-                tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-                lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-                tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
+                images: specs.images || [],
+                features: specs.features || [],
+                soldCount: specs.soldCount || 0,
+                testimonials: specs.testimonials || [],
+                types: specs.types || (item.variants ? Array.from(new Set(item.variants.map((v:any) => v.type).filter(Boolean))).map(t => ({ name: t as string, extraPrice: 0 })) : undefined),
+                sizes: specs.sizes || (item.variants ? Array.from(new Set(item.variants.map((v:any) => v.size).filter(Boolean))).map(s => ({ name: s as string, extraPrice: 0 })) : undefined),
               },
               variants: (item.variants || []).map((v: any) => ({
                 ...v,
                 shopeeAvailable: v.shopeeAvailable !== undefined ? v.shopeeAvailable : true,
-                tokopediaAvailable: v.tokopediaAvailable !== undefined ? v.tokopediaAvailable : true,
-                lazadaAvailable: v.lazadaAvailable !== undefined ? v.lazadaAvailable : true,
-                tiktokAvailable: v.tiktokAvailable !== undefined ? v.tiktokAvailable : true,
               }))
             };
           });
           setAllProducts(mappedData);
+        } else {
+          const localMockStr = localStorage.getItem('simoengil_mock_products');
+          if (localMockStr) {
+            setAllProducts(JSON.parse(localMockStr));
+          } else {
+            setAllProducts(PRODUCTS);
+          }
         }
       } catch (err) {
-        console.warn('Supabase fetch failed, falling back to local products list:', err);
+        console.warn('Failed to fetch all products, using local fallback:', err);
+        const localMockStr = localStorage.getItem('simoengil_mock_products');
+        if (localMockStr) {
+          setAllProducts(JSON.parse(localMockStr));
+        } else {
+          setAllProducts(PRODUCTS);
+        }
       }
     };
 
@@ -296,47 +305,39 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   }
 
   // Derived states
-  const hasVariants = !!(product.variants && product.variants.length > 0);
-  const selectedVariant = product.variants?.find((v) => v.size === selectedSize) || null;
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
-  const isPurchaseDisabled = hasVariants && !selectedSize;
+  const productTypes = product.specifications?.types || [];
+  const productSizes = product.specifications?.sizes || [];
+  const uniqueTypes = productTypes.map(t => t.name);
+  const uniqueSizes = productSizes.map(s => s.name);
 
-  const prices: number[] = [product.price];
-  if (product.variants && product.variants.length > 0) {
-    product.variants.forEach(v => {
-      if (v.price) {
-        prices.push(v.price);
-      }
-    });
-  }
-  const validPrices = Array.from(new Set(prices.filter(p => typeof p === 'number' && !isNaN(p))));
-  const minPrice = Math.min(...validPrices);
-  const maxPrice = Math.max(...validPrices);
+  const hasTypes = uniqueTypes.length > 0;
+  const hasSizes = uniqueSizes.length > 0;
+  
+  const selectedTypeObj = productTypes.find(t => t.name === selectedType);
+  const selectedSizeObj = productSizes.find(s => s.name === selectedSize);
 
-  const isShopeeAvailable = selectedVariant ? (selectedVariant.shopeeAvailable !== false) : (product.shopeeAvailable !== false);
-  const isTokopediaAvailable = selectedVariant ? (selectedVariant.tokopediaAvailable !== false) : (product.tokopediaAvailable !== false);
-  const isLazadaAvailable = selectedVariant ? (selectedVariant.lazadaAvailable !== false) : (product.lazadaAvailable !== false);
-  const isTiktokAvailable = selectedVariant ? (selectedVariant.tiktokAvailable !== false) : (product.tiktokAvailable !== false);
+  const typeExtraPrice = selectedTypeObj?.extraPrice || 0;
+  const sizeExtraPrice = selectedSizeObj?.extraPrice || 0;
+  const currentPrice = product.price + typeExtraPrice + sizeExtraPrice;
+  
+  const isTypeSelected = !hasTypes || selectedType !== null;
+  const isSizeSelected = !hasSizes || selectedSize !== null;
+  const isPurchaseDisabled = !isTypeSelected || !isSizeSelected;
 
-  // Wishlist arrays
-  const wishlistProducts = allProducts.filter(p => wishlist.includes(p.id));
-  const isWishlisted = wishlist.includes(product.id);
+  const maxTypeExtra = productTypes.length > 0 ? Math.max(...productTypes.map(t => t.extraPrice || 0)) : 0;
+  const maxSizeExtra = productSizes.length > 0 ? Math.max(...productSizes.map(s => s.extraPrice || 0)) : 0;
+  
+  const minPrice = product.price;
+  const maxPrice = product.price + maxTypeExtra + maxSizeExtra;
 
-  // Gallery images list (Main product photo + additional images + fallbacks)
-  const baseGallery = [
+  // Shopee availability logic (simplified for now to product level)
+  const isShopeeAvailable = product.specifications?.shopeeAvailable !== false && product.shopeeAvailable !== false;
+
+  // Gallery images list (Main product photo + additional images)
+  const galleryImages = [
     product.image,
     ...(product.specifications?.images || product.images || [])
   ].filter(Boolean);
-  
-  // If there are not enough gallery images, supplement with premium details/lifestyle fallbacks
-  const galleryImages = [...baseGallery];
-  if (galleryImages.length <= 1) {
-    galleryImages.push(
-      '/images/plushie_lifestyle_car.png',
-      '/images/detail_fabric.png',
-      '/images/detail_giftbox.png'
-    );
-  }
 
   // Format IDR Price
   const formatIDR = (num: number) => {
@@ -348,27 +349,16 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     }).format(num);
   };
 
-  const getMarketplacePrice = (platform: 'shopee' | 'tokopedia' | 'lazada' | 'tiktok') => {
+  const getMarketplacePrice = (platform: 'shopee') => {
     let platPrices: number[] = [];
-    if (selectedVariant) {
-      if (platform === 'shopee' && isShopeeAvailable) platPrices.push(selectedVariant.shopeePrice || selectedVariant.price || product.price);
-      else if (platform === 'tokopedia' && isTokopediaAvailable) platPrices.push(selectedVariant.tokopediaPrice || selectedVariant.price || product.price);
-      else if (platform === 'lazada' && isLazadaAvailable) platPrices.push(selectedVariant.lazadaPrice || selectedVariant.price || product.price);
-      else if (platform === 'tiktok' && isTiktokAvailable) platPrices.push(selectedVariant.tiktokPrice || selectedVariant.price || product.price);
-    } else {
-      if (platform === 'shopee') {
-        if (product.shopeeAvailable !== false) platPrices.push(product.shopeePrice || product.price);
-        product.variants?.forEach(v => { if (v.shopeeAvailable !== false) platPrices.push(v.shopeePrice || v.price || product.price); });
-      } else if (platform === 'tokopedia') {
-        if (product.tokopediaAvailable !== false) platPrices.push(product.tokopediaPrice || product.price);
-        product.variants?.forEach(v => { if (v.tokopediaAvailable !== false) platPrices.push(v.tokopediaPrice || v.price || product.price); });
-      } else if (platform === 'lazada') {
-        if (product.lazadaAvailable !== false) platPrices.push(product.lazadaPrice || product.price);
-        product.variants?.forEach(v => { if (v.lazadaAvailable !== false) platPrices.push(v.lazadaPrice || v.price || product.price); });
-      } else if (platform === 'tiktok') {
-        if (product.tiktokAvailable !== false) platPrices.push(product.tiktokPrice || product.price);
-        product.variants?.forEach(v => { if (v.tiktokAvailable !== false) platPrices.push(v.tiktokPrice || v.price || product.price); });
-      }
+    if (platform === 'shopee' && isShopeeAvailable) {
+        if (product.specifications?.shopeePrice) {
+            platPrices.push(product.specifications.shopeePrice);
+        } else if (product.shopeePrice) {
+            platPrices.push(product.shopeePrice);
+        } else {
+            platPrices.push(currentPrice);
+        }
     }
     const validPlatPrices = Array.from(new Set(platPrices.filter(p => typeof p === 'number' && !isNaN(p))));
     if (validPlatPrices.length === 0) return '';
@@ -383,30 +373,79 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     return `https://wa.me/6281234567890?text=${encodeURIComponent(text)}`;
   };
 
-  // Wishlist toggler
-  const handleWishlistToggle = () => {
-    let updatedWishlist: string[];
-    if (isWishlisted) {
-      updatedWishlist = wishlist.filter(item => item !== product.id);
-    } else {
-      updatedWishlist = [...wishlist, product.id];
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.8 },
-        colors: ['#ff8fa3', '#ff4d6d'],
-      });
-    }
-    setWishlist(updatedWishlist);
-    localStorage.setItem('simoengil_wishlist', JSON.stringify(updatedWishlist));
+  // Sync cart to localStorage
+  const handleUpdateCartQuantity = (cartItemId: string, delta: number) => {
+    const updated = cart.map(item => {
+      if (item.cartItemId === cartItemId) {
+        const newQ = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQ };
+      }
+      return item;
+    });
+    setCart(updated);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updated));
   };
 
-  // Remove single item from wishlist drawer
-  const handleRemoveWishlistItem = (itemId: string) => {
-    const updatedWishlist = wishlist.filter(item => item !== itemId);
-    setWishlist(updatedWishlist);
-    localStorage.setItem('simoengil_wishlist', JSON.stringify(updatedWishlist));
+  const handleRemoveCartItem = (cartItemId: string) => {
+    const updated = cart.filter(item => item.cartItemId !== cartItemId);
+    setCart(updated);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updated));
   };
+
+  const handleAddToCart = () => {
+    if (isPurchaseDisabled) return;
+    
+    // Create cart item
+    const cartItemId = `${product.id}-${selectedSize || 'default'}-${Date.now()}`;
+    const newItem: CartItem = {
+      ...product,
+      cartItemId,
+      selectedVariantType: selectedType || undefined,
+      selectedVariantSize: selectedSize || undefined,
+      quantity: 1,
+      selectedPrice: currentPrice ?? 0,
+    };
+
+    const updated = [...cart, newItem];
+    setCart(updated);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updated));
+    
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.8 },
+      colors: ['#0F4C5C', '#1A7A90'],
+    });
+
+    // Buka drawer cart
+    setIsWishlistOpen(true);
+  };
+
+  const handleBuyNow = () => {
+    if (isPurchaseDisabled) return;
+    
+    // Create cart item
+    const cartItemId = `${product.id}-${selectedSize || 'default'}-${Date.now()}`;
+    const newItem: CartItem = {
+      ...product,
+      cartItemId,
+      selectedVariantType: selectedType || undefined,
+      selectedVariantSize: selectedSize || undefined,
+      quantity: 1,
+      selectedPrice: currentPrice ?? 0,
+    };
+
+    const updated = [...cart, newItem];
+    setCart(updated);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updated));
+    
+    // Langsung ke checkout
+    let checkoutUrl = `/checkout?product_id=${product.id}`;
+    if (selectedType) checkoutUrl += `&type=${selectedType}`;
+    if (selectedSize) checkoutUrl += `&variant=${selectedSize}`;
+    router.push(checkoutUrl);
+  };
+
 
   const handleWishlistDetailClick = (p: Product) => {
     setIsWishlistOpen(false);
@@ -426,38 +465,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
       colors: colors,
     });
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  // Static review data for bottom testimonials
-  const reviews = [
-    {
-      id: 1,
-      name: 'Ratih Ningsih',
-      rating: 5,
-      date: '12 Mei 2026',
-      comment: 'Bulunya halus banget rasfur premium, jahitannya sangat rapi dan tebal. Isian dacronnya padat tapi tetap empuk banget dipeluk. Sangat rekomended buat anak-anak!',
-      avatar: 'RN',
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Budi Santoso',
-      rating: 5,
-      date: '04 Mei 2026',
-      comment: 'Beli untuk kado wisuda pacar, respon admin cepat dan dapet selempang kustom nama wisuda gratis. Packingnya rapi menggunakan box cantik dan pita pink manis.',
-      avatar: 'BS',
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Siti Rahma',
-      rating: 5,
-      date: '28 April 2026',
-      comment: 'Anak saya senang sekali dengan boneka ini, dipeluk terus setiap tidur. Bulunya tidak mudah rontok jadi aman untuk balita. Kemarin dicuci mesin cuci dan dikeringkan tetap mengembang bagus!',
-      avatar: 'SR',
-      verified: true
-    }
-  ];
+  };  const testimonials = product.specifications?.testimonials || [];
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip selection:bg-pink-100 selection:text-pink-600 bg-transparent font-sans text-[#2C2C2C]">
@@ -519,16 +527,16 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
           {/* Right Header WhatsApp CTA */}
           <div className="flex items-center gap-4">
-            {/* Wishlist Button in Header */}
+            {/* Cart Button in Header */}
             <button
               onClick={() => setIsWishlistOpen(true)}
               className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
-              aria-label="Buka Wishlist"
+              aria-label="Buka Keranjang"
             >
-              <Heart className="w-5 h-5 group-hover:scale-105 transition-transform" />
-              {wishlist.length > 0 && (
+              <ShoppingBag className="w-5 h-5 group-hover:scale-105 transition-transform" />
+              {cart.length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
-                  {wishlist.length}
+                  {cart.length}
                 </span>
               )}
             </button>
@@ -582,14 +590,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               title="Salin Tautan"
             >
               <Share2 className="w-4.5 h-4.5" />
-            </button>
-            {/* Wishlist */}
-            <button
-              onClick={handleWishlistToggle}
-              className="p-2.5 rounded-xl bg-white shadow-xs border border-[#FFB6C8]/10 hover:border-[#FFB6C8]/30 text-slate-500 hover:text-[#FF8FB1] transition-all cursor-pointer group hover:scale-105 active:scale-95"
-              title="Tambah ke Favorit"
-            >
-              <Heart className={`w-4.5 h-4.5 transition-transform duration-300 group-hover:scale-110 ${isWishlisted ? 'fill-[#FF8FB1] stroke-[#FF8FB1]' : 'stroke-slate-500'}`} />
             </button>
           </div>
         </div>
@@ -705,7 +705,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                   <span className="text-sm font-bold text-[#2C2C2C]">{product.rating}</span>
                   <span className="text-xs text-slate-400">({product.reviewsCount} Ulasan)</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                  <span className="text-xs font-bold text-slate-500">{(product.reviewsCount * 3 + 12)} Terjual</span>
+                  <span className="text-xs font-bold text-slate-500">{product.specifications?.soldCount || 0} Terjual</span>
                 </div>
 
                 {/* Pricing Box */}
@@ -715,11 +715,9 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                   </span>
                   <div className="flex items-baseline gap-2.5">
                     <span className="text-3xl sm:text-4xl font-extrabold text-[#FF8FB1] tracking-tight">
-                      {selectedSize && selectedVariant?.price 
-                        ? formatIDR(selectedVariant.price)
-                        : minPrice === maxPrice 
-                          ? formatIDR(minPrice)
-                          : `${formatIDR(minPrice)} - ${formatIDR(maxPrice)}`
+                      {(selectedType || selectedSize || minPrice === maxPrice)
+                        ? formatIDR(currentPrice)
+                        : `${formatIDR(minPrice)} - ${formatIDR(maxPrice)}`
                       }
                     </span>
                     {selectedSize && (
@@ -730,27 +728,81 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                   </div>
                 </div>
 
-                {/* Size Selection Section */}
-                {hasVariants && (
+                {/* Variant Type Selection Section */}
+                {hasTypes && (
                   <div className="mb-6 space-y-3">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">
-                      Pilih Ukuran Teman Peluk:
+                      Variasi:
                     </span>
                     <div className="flex flex-wrap gap-2.5">
-                      {product.variants?.map((v) => {
-                        const isSelected = selectedSize === v.size;
+                      {productTypes.map((typeObj, index) => {
+                        const isSelected = selectedType === typeObj.name;
                         return (
                           <button
-                            key={v.size}
-                            onClick={() => setSelectedSize(v.size)}
-                            className={`px-5 py-3 rounded-full text-xs font-bold transition-all border cursor-pointer hover:scale-105 active:scale-95 duration-200 flex items-center gap-1.5 ${
+                            key={`${typeObj.name}-${index}`}
+                            onClick={() => {
+                              setSelectedType(typeObj.name);
+                              if (typeObj.image) {
+                                setActiveImage(typeObj.image);
+                              } else {
+                                setActiveImage(product.image);
+                              }
+                            }}
+                            className={`relative px-4 py-2 rounded text-xs font-bold transition-all border cursor-pointer hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 ${
                               isSelected
-                                ? 'bg-[#FF8FB1] border-[#FF8FB1] text-white shadow-md shadow-pink-500/25'
-                                : 'bg-white border-[#FFB6C8]/25 text-slate-600 hover:border-[#FF8FB1] hover:text-[#FF8FB1]'
+                                ? 'bg-white border-orange-500 text-orange-600'
+                                : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500'
                             }`}
                           >
-                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
-                            <span>{v.size}</span>
+                            {typeObj.image && (
+                              <img src={typeObj.image} alt={typeObj.name} className="w-6 h-6 object-cover rounded shadow-sm" />
+                            )}
+                            <div className="flex flex-col items-start">
+                              <span>{typeObj.name}</span>
+                              {typeObj.extraPrice ? (
+                                <span className="text-[9px] text-orange-500/80 font-semibold">(+{formatIDR(typeObj.extraPrice)})</span>
+                              ) : null}
+                            </div>
+                            {isSelected && (
+                              <div className="absolute bottom-0 right-0 w-0 h-0 border-[8px] border-transparent border-b-orange-500 border-r-orange-500">
+                                <span className="absolute -bottom-1 -right-1 text-white text-[8px] font-black translate-x-[2px] translate-y-[2px]">✓</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Size Selection */}
+                {hasSizes && (
+                  <div className="mb-6 space-y-3">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+                      Ukuran:
+                    </span>
+                    <div className="flex flex-wrap gap-2.5">
+                      {productSizes.map((szObj, index) => {
+                        const isSelected = selectedSize === szObj.name;
+                        return (
+                          <button
+                            key={`${szObj.name}-${index}`}
+                            onClick={() => setSelectedSize(szObj.name)}
+                            className={`relative px-4 py-2 rounded text-xs font-bold transition-all border cursor-pointer hover:scale-105 active:scale-95 duration-200 flex flex-col items-center ${
+                              isSelected
+                                ? 'bg-white border-orange-500 text-orange-600'
+                                : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500'
+                            }`}
+                          >
+                            <span>{szObj.name}</span>
+                            {szObj.extraPrice ? (
+                              <span className="text-[9px] text-orange-500/80 font-semibold">(+{formatIDR(szObj.extraPrice)})</span>
+                            ) : null}
+                            {isSelected && (
+                              <div className="absolute bottom-0 right-0 w-0 h-0 border-[8px] border-transparent border-b-orange-500 border-r-orange-500">
+                                <span className="absolute -bottom-1 -right-1 text-white text-[8px] font-black translate-x-[2px] translate-y-[2px]">✓</span>
+                              </div>
+                            )}
                           </button>
                         );
                       })}
@@ -821,32 +873,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                     </div>
                   </div>
 
-                  {/* 3. Cara Perawatan */}
-                  <div className="border-b border-slate-100">
-                    <button
-                      onClick={() => handleAccordionToggle('perawatan')}
-                      className="w-full py-4 flex items-center justify-between font-heading font-black text-sm text-[#2C2C2C] hover:text-[#FF8FB1] transition-colors focus:outline-none"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <Droplet className="w-4 h-4 text-[#FF8FB1]" />
-                        <span>Cara Perawatan</span>
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${activeAccordion === 'perawatan' ? 'rotate-180 text-[#FF8FB1]' : ''}`} />
-                    </button>
-                    <div className={`overflow-hidden transition-all duration-300 ${activeAccordion === 'perawatan' ? 'max-h-96 pb-4' : 'max-h-0'}`}>
-                      <div className="text-xs sm:text-sm text-slate-600 space-y-2 pl-6.5 font-medium">
-                        <p className="font-bold text-slate-700">Metode Pencucian: {product.specifications.washing}</p>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-500">
-                          <li>Masukkan boneka ke dalam laundry bag jaring sebelum masuk mesin cuci.</li>
-                          <li>Gunakan sabun detergen cair yang lembut (sabun bayi direkomendasikan).</li>
-                          <li>Pilih putaran lembut (delicate/handwash cycle) dan air dingin.</li>
-                          <li>Keringkan secara alami dengan diangin-anginkan. Hindari jemur langsung di bawah terik matahari ekstrem agar serat bulu tetap halus.</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Kelebihan Boneka Simoengil */}
+                  {/* 3. Kelebihan Boneka Simoengil */}
                   <div className="border-b border-slate-100">
                     <button
                       onClick={() => handleAccordionToggle('kelebihan')}
@@ -858,36 +885,35 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                       </span>
                       <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${activeAccordion === 'kelebihan' ? 'rotate-180 text-[#FF8FB1]' : ''}`} />
                     </button>
-                    <div className={`overflow-hidden transition-all duration-300 ${activeAccordion === 'kelebihan' ? 'max-h-[32rem] pb-4' : 'max-h-0'}`}>
+                    <div className={`overflow-hidden transition-all duration-300 ${activeAccordion === 'kelebihan' ? 'max-h-[32rem] overflow-y-auto pb-4' : 'max-h-0'}`}>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6.5">
-                        <div className="p-3 bg-pink-50/50 rounded-2xl border border-pink-100/50 flex gap-2">
-                          <span className="text-xl">🪡</span>
-                          <div>
-                            <h5 className="font-bold text-xs text-[#2C2C2C]">Jahitan Super Kuat</h5>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi.</p>
+                        {product.specifications.features && product.specifications.features.length > 0 ? (
+                          product.specifications.features.map((feat, idx) => {
+                            // Rotate colors based on index
+                            const colors = [
+                              'bg-pink-50/50 border-pink-100/50',
+                              'bg-amber-50/50 border-amber-100/50',
+                              'bg-emerald-50/50 border-emerald-100/50',
+                              'bg-blue-50/50 border-blue-100/50',
+                              'bg-purple-50/50 border-purple-100/50'
+                            ];
+                            const colorClass = colors[idx % colors.length];
+                            
+                            return (
+                              <div key={idx} className={`p-3 rounded-2xl border flex gap-2 ${colorClass}`}>
+                                <span className="text-xl shrink-0">{feat.icon}</span>
+                                <div>
+                                  <h5 className="font-bold text-xs text-[#2C2C2C]">{feat.title}</h5>
+                                  <p className="text-[10px] text-slate-500 mt-0.5">{feat.description}</p>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="col-span-1 sm:col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                            <p className="text-xs text-slate-500 italic">Belum ada informasi kelebihan khusus untuk produk ini.</p>
                           </div>
-                        </div>
-                        <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-100/50 flex gap-2">
-                          <span className="text-xl">🛡️</span>
-                          <div>
-                            <h5 className="font-bold text-xs text-[#2C2C2C]">Hypoallergenic</h5>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi.</p>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 flex gap-2">
-                          <span className="text-xl">🧼</span>
-                          <div>
-                            <h5 className="font-bold text-xs text-[#2C2C2C]">Washable & Quick-dry</h5>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali.</p>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 flex gap-2">
-                          <span className="text-xl">🇮🇩</span>
-                          <div>
-                            <h5 className="font-bold text-xs text-[#2C2C2C]">100% Produk Lokal</h5>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia.</p>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -897,125 +923,36 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
               {/* ORDER ACTIONS SECTION */}
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                
-                {/* 1. Hubungi via WhatsApp Button (Paling menonjol) */}
-                <a
-                  href={getWhatsAppLink(product.name, selectedSize)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setWhatsappSent(true)}
-                  className="w-full py-4 px-6 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-2xl font-black text-base transition-all shadow-[0_8px_25px_-5px_rgba(37,211,102,0.35)] hover:shadow-[0_12px_30px_-5px_rgba(37,211,102,0.5)] hover:scale-[1.02] active:scale-98 flex items-center justify-center gap-3 cursor-pointer text-center duration-250 hover:animate-wiggle"
-                >
-                  <svg className="w-5.5 h-5.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.588 2.01 14.137.985 11.998.985 6.559.985 2.137 5.357 2.133 10.789c-.001 1.666.443 3.291 1.285 4.743L2.43 19.982l4.217-1.108zm12.513-6.812c-.332-.165-1.962-.968-2.266-1.077-.303-.11-.525-.165-.745.165-.22.33-.85.744-1.04.96-.19.217-.381.244-.713.079-.332-.165-1.401-.515-2.668-1.644-.986-.88-1.652-1.968-1.846-2.298-.19-.33-.02-.508.145-.672.148-.148.332-.386.498-.578.166-.193.22-.33.33-.55.11-.22.055-.413-.028-.578-.083-.165-.745-1.79-.988-2.38-.243-.59-.49-.51-.672-.519-.172-.008-.37-.01-.568-.01-.199 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.962-.801 2.24-1.575.276-.774.276-1.439.194-1.575-.083-.137-.303-.22-.635-.386z" />
-                  </svg>
-                  <span>Hubungi Admin via WhatsApp</span>
-                </a>
-                
-                {whatsappSent && (
-                  <p className="text-center text-[10px] text-emerald-600 font-bold bg-emerald-50 py-2 rounded-xl border border-emerald-100 animate-fadeIn">
-                    ✓ Membuka WhatsApp chat... Hubungi admin untuk custom order, pita nama, atau kado spesial!
-                  </p>
-                )}
 
-                <div className="relative flex items-center justify-center my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-100"></div>
-                  </div>
-                  <span className="relative px-4 text-[10px] font-black text-slate-400 bg-white uppercase tracking-widest">
-                    Atau Adopsi di Marketplace Resmi
-                  </span>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isPurchaseDisabled}
+                    className={`flex-1 py-4 px-2 ${isPurchaseDisabled ? 'bg-slate-300' : 'bg-[#0F4C5C] hover:bg-[#0B3A46] hover:scale-[1.02]'} text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer`}
+                  >
+                    <ShoppingCart className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                    <span>+ Keranjang</span>
+                  </button>
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isPurchaseDisabled}
+                    className={`flex-1 py-4 px-2 ${isPurchaseDisabled ? 'bg-slate-300' : 'bg-[#FF8FB1] hover:bg-[#FF7A9F] hover:scale-[1.02]'} text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer`}
+                  >
+                    <span>Beli Sekarang</span>
+                  </button>
                 </div>
 
-                {/* 2. Secondary marketplace buttons side-by-side */}
-                <div className="space-y-3">
-                  {isPurchaseDisabled && (
-                    <div className="text-center text-xs font-bold text-[#E8B37D] bg-[#FFFBF0] border border-[#E8B37D]/25 rounded-xl py-2.5 px-3 flex items-center justify-center gap-1.5 animate-pulse">
-                      <span>🌸</span>
-                      <span>Pilih Ukuran Terlebih Dahulu untuk Membuka Link Marketplace</span>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Shopee */}
-                    <button
-                      disabled={isPurchaseDisabled || !isShopeeAvailable || !(selectedVariant?.shopeeUrl || product.shopeeLink)}
-                      onClick={() => {
-                        const url = selectedVariant?.shopeeUrl || product.shopeeLink;
-                        if (url) handleMarketplaceClick('shopee', url);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-3 px-4 rounded-2xl transition-all duration-300 ${
-                        (isPurchaseDisabled || !isShopeeAvailable || !(selectedVariant?.shopeeUrl || product.shopeeLink))
-                          ? 'bg-slate-50 border border-slate-100 text-slate-300 cursor-not-allowed opacity-50 pointer-events-none'
-                          : 'bg-[#ee4d2d] hover:bg-[#e03f20] text-white shadow-md shadow-orange-500/10 hover:shadow-lg hover:scale-[1.01] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs sm:text-sm font-bold">
-                        <ShoppingBag className="w-4.5 h-4.5" />
-                        <span>Beli di Shopee</span>
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-medium opacity-90">{getMarketplacePrice('shopee')}</span>
-                    </button>
-
-                    {/* Tokopedia */}
-                    <button
-                      disabled={isPurchaseDisabled || !isTokopediaAvailable || !(selectedVariant?.tokopediaUrl || product.tokopediaLink)}
-                      onClick={() => {
-                        const url = selectedVariant?.tokopediaUrl || product.tokopediaLink;
-                        if (url) handleMarketplaceClick('tokopedia', url);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-3 px-4 rounded-2xl transition-all duration-300 ${
-                        (isPurchaseDisabled || !isTokopediaAvailable || !(selectedVariant?.tokopediaUrl || product.tokopediaLink))
-                          ? 'bg-slate-50 border border-slate-100 text-slate-300 cursor-not-allowed opacity-50 pointer-events-none'
-                          : 'bg-[#03ac0e] hover:bg-[#02960c] text-white shadow-md shadow-green-500/10 hover:shadow-lg hover:scale-[1.01] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs sm:text-sm font-bold">
-                        <ShoppingBag className="w-4.5 h-4.5" />
-                        <span>Beli di Tokopedia</span>
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-medium opacity-90">{getMarketplacePrice('tokopedia')}</span>
-                    </button>
-
-                    {/* Lazada */}
-                    <button
-                      disabled={isPurchaseDisabled || !isLazadaAvailable || !(selectedVariant?.lazadaUrl || product.lazadaLink)}
-                      onClick={() => {
-                        const url = selectedVariant?.lazadaUrl || product.lazadaLink;
-                        if (url) handleMarketplaceClick('lazada', url);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-3 px-4 rounded-2xl transition-all duration-300 ${
-                        (isPurchaseDisabled || !isLazadaAvailable || !(selectedVariant?.lazadaUrl || product.lazadaLink))
-                          ? 'bg-slate-50 border border-slate-100 text-slate-300 cursor-not-allowed opacity-50 pointer-events-none'
-                          : 'bg-[#0f136d] hover:bg-[#0c0f56] text-white shadow-xs hover:shadow-md hover:scale-[1.01] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs font-bold">
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Beli di Lazada</span>
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-medium opacity-90">{getMarketplacePrice('lazada')}</span>
-                    </button>
-
-                    {/* TikTok */}
-                    <button
-                      disabled={isPurchaseDisabled || !isTiktokAvailable || !(selectedVariant?.tiktokUrl || product.tiktokLink)}
-                      onClick={() => {
-                        const url = selectedVariant?.tiktokUrl || product.tiktokLink;
-                        if (url) handleMarketplaceClick('tiktok', url);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-3 px-4 rounded-2xl transition-all duration-300 ${
-                        (isPurchaseDisabled || !isTiktokAvailable || !(selectedVariant?.tiktokUrl || product.tiktokLink))
-                          ? 'bg-slate-50 border border-slate-100 text-slate-300 cursor-not-allowed opacity-50 pointer-events-none'
-                          : 'bg-black hover:bg-[#111] text-white shadow-xs hover:shadow-md hover:scale-[1.01] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs font-bold">
-                        <ShoppingBag className="w-4 h-4" />
-                        <span>Beli di TikTok Shop</span>
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-medium opacity-90">{getMarketplacePrice('tiktok')}</span>
-                    </button>
-                  </div>
+                <div className="w-full mt-3">
+                  <button
+                    onClick={() => {
+                      const url = product.shopeeLink;
+                      if (url) handleMarketplaceClick('shopee', url);
+                    }}
+                    disabled={isPurchaseDisabled || !isShopeeAvailable || !product.shopeeLink}
+                    className={`w-full py-4 px-2 ${(isPurchaseDisabled || !isShopeeAvailable || !product.shopeeLink) ? 'bg-slate-300' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:scale-[1.02]'} text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer`}
+                  >
+                    <span>Beli di Shopee</span>
+                  </button>
                 </div>
 
               </div>
@@ -1042,46 +979,47 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           </div>
 
           {/* Testimonials Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews.map((rev) => (
-              <div
-                key={rev.id}
-                className="bg-white rounded-2xl p-6 border border-[#FFB6C8]/20 shadow-xs flex flex-col justify-between space-y-6 hover:shadow-md transition-shadow"
-              >
-                <div className="space-y-3">
-                  {/* Rating Stars */}
-                  <div className="flex text-[#E8B37D] gap-0.5">
-                    {[...Array(rev.rating)].map((_, i) => (
-                      <Star key={i} className="w-4.5 h-4.5 fill-current text-[#E8B37D]" />
-                    ))}
+          {testimonials.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((testi, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl p-6 border border-[#FFB6C8]/20 shadow-xs flex flex-col justify-between space-y-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="space-y-3">
+                    {/* Rating Stars */}
+                    <div className="flex text-[#E8B37D] gap-0.5">
+                      {[...Array(testi.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-4.5 h-4.5 fill-current text-[#E8B37D]" />
+                      ))}
+                    </div>
+                    
+                    {/* Comment */}
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium italic">
+                      &quot;{testi.message}&quot;
+                    </p>
                   </div>
-                  
-                  {/* Comment */}
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium italic">
-                    &quot;{rev.comment}&quot;
-                  </p>
-                </div>
 
-                {/* Reviewer Details */}
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                  <div className="w-9 h-9 rounded-full bg-[#FFF5F0] text-[#FF8FB1] font-bold text-xs flex items-center justify-center border border-[#FFB6C8]/20">
-                    {rev.avatar}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
-                      <span>{rev.name}</span>
-                      {rev.verified && (
-                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">
-                          ✓ Verified
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-[10px] text-slate-400">{rev.date}</p>
+                  {/* Reviewer Details */}
+                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                    <div className="w-9 h-9 rounded-full bg-[#FFF5F0] text-[#FF8FB1] font-bold text-xs flex items-center justify-center border border-[#FFB6C8]/20">
+                      {testi.avatar || testi.name.substring(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                        <span>{testi.name}</span>
+                      </h4>
+                      {testi.date && <p className="text-[10px] text-slate-400">{testi.date}</p>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-8 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-sm text-slate-500 italic">Belum ada testimoni pelanggan untuk produk ini.</p>
+            </div>
+          )}
 
         </div>
 
@@ -1158,12 +1096,13 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         </div>
       </footer>
 
-      {/* WISHLIST DRAWER */}
+      {/* CART DRAWER */}
       <WishlistDrawer
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
-        wishlistItems={wishlistProducts}
-        onRemoveItem={handleRemoveWishlistItem}
+        cartItems={cart}
+        onRemoveItem={handleRemoveCartItem}
+        onUpdateQuantity={handleUpdateCartQuantity}
         onDetailClick={handleWishlistDetailClick}
       />
       

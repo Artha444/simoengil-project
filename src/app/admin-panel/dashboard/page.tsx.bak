@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { PRODUCTS, Product, ProductVariant, ProductType, ProductSize, ProductFeature } from '@/data/products';
+import { PRODUCTS, Product, ProductVariant } from '@/data/products';
 import { 
   Plus, 
   Trash2, 
@@ -38,21 +38,25 @@ export default function AdminDashboardPage() {
   const [imageUrl, setImageUrl] = useState('');
   const [status, setStatus] = useState<'Best Seller' | 'Stok Terbatas' | 'Baru' | 'Promo'>('Baru');
   const [description, setDescription] = useState('');
-  const [formTypes, setFormTypes] = useState<ProductType[]>([]);
-  const [formSizes, setFormSizes] = useState<ProductSize[]>([]);
-  const [rating, setRating] = useState('5.0');
-  const [reviewsCount, setReviewsCount] = useState('0');
-  const [material, setMaterial] = useState('100% Premium Dacron Silikon & Kain Rasfur Halus');
-  const [sizeSpec, setSizeSpec] = useState('Ukuran Standar');
+  const [formVariants, setFormVariants] = useState<ProductVariant[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   // Platform Links & Prices
   const [shopeeLink, setShopeeLink] = useState('');
+  const [tokopediaLink, setTokopediaLink] = useState('');
+  const [lazadaLink, setLazadaLink] = useState('');
+  const [tiktokLink, setTiktokLink] = useState('');
   const [shopeePrice, setShopeePrice] = useState('');
+  const [tokopediaPrice, setTokopediaPrice] = useState('');
+  const [lazadaPrice, setLazadaPrice] = useState('');
+  const [tiktokPrice, setTiktokPrice] = useState('');
 
   // Platform Availability Checks (Default to true)
   const [shopeeAvailable, setShopeeAvailable] = useState<boolean>(true);
+  const [tokopediaAvailable, setTokopediaAvailable] = useState<boolean>(true);
+  const [lazadaAvailable, setLazadaAvailable] = useState<boolean>(true);
+  const [tiktokAvailable, setTiktokAvailable] = useState<boolean>(true);
 
   // Dynamic Categories Creator states
   const [categoriesList, setCategoriesList] = useState<string[]>(['Boneka Beruang', 'Gantungan Kunci', 'Kado Wisuda']);
@@ -83,9 +87,7 @@ export default function AdminDashboardPage() {
 
   // Additional Images & Features state
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
-  const [features, setFeatures] = useState<ProductFeature[]>([]);
-  const [soldCount, setSoldCount] = useState('0');
-  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [features, setFeatures] = useState<string[]>([]);
 
   // Scan and merge categories from existing products list
   useEffect(() => {
@@ -155,10 +157,12 @@ export default function AdminDashboardPage() {
             tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
             images: specs.images || item.images || [],
             specifications: {
-              material: specs.material || '100% Premium Dacron Silikon & Kain Rasfur Halus',
-              size: specs.size || 'Ukuran Standar',
-              washing: specs.washing || 'Bisa dicuci dengan mesin (putaran lembut)',
+              material: specs.material || '100% Premium Dacron & Kain Rasfur',
+              size: specs.size || 'Standard',
+              washing: specs.washing || 'Bisa dicuci mesin',
               safeForKids: specs.safeForKids !== undefined ? specs.safeForKids : true,
+              lazadaLink: specs.lazadaLink || '',
+              tiktokLink: specs.tiktokLink || '',
               shopeePrice: specs.shopeePrice || undefined,
               tokopediaPrice: specs.tokopediaPrice || undefined,
               lazadaPrice: specs.lazadaPrice || undefined,
@@ -168,11 +172,6 @@ export default function AdminDashboardPage() {
               lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
               tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
               images: specs.images || [],
-              features: specs.features || [],
-              soldCount: specs.soldCount || 0,
-              testimonials: specs.testimonials || [],
-              types: specs.types || undefined,
-              sizes: specs.sizes || undefined,
             },
             variants: (item.variants || []).map((v: any) => ({
               ...v,
@@ -183,24 +182,13 @@ export default function AdminDashboardPage() {
             }))
           };
         });
-        localStorage.setItem('simoengil_mock_products', JSON.stringify(mappedData));
         setProducts(mappedData);
-      } else {
-        const localMock = localStorage.getItem('simoengil_mock_products');
-        if (localMock) {
-          setProducts(JSON.parse(localMock));
-        } else {
-          setProducts(PRODUCTS);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to fetch from Supabase, using local fallback:', err);
-      const localMock = localStorage.getItem('simoengil_mock_products');
-      if (localMock) {
-        setProducts(JSON.parse(localMock));
       } else {
         setProducts(PRODUCTS);
       }
+    } catch (err) {
+      console.warn('Supabase fetch failed or table is missing, falling back to local list:', err);
+      setProducts(PRODUCTS);
     } finally {
       setIsFetching(false);
     }
@@ -342,57 +330,45 @@ export default function AdminDashboardPage() {
     setImageUrl('');
     setStatus('Baru');
     setDescription('');
-    setFormTypes([]);
-    setFormSizes([]);
-    setRating('5.0');
-    setReviewsCount('0');
-    setMaterial('100% Premium Dacron Silikon & Kain Rasfur Halus');
-    setSizeSpec('Ukuran Standar');
+    setFormVariants([]);
     setShopeeLink('');
+    setTokopediaLink('');
+    setLazadaLink('');
+    setTiktokLink('');
     setShopeePrice('');
+    setTokopediaPrice('');
+    setLazadaPrice('');
+    setTiktokPrice('');
     setShopeeAvailable(true);
+    setTokopediaAvailable(true);
+    setLazadaAvailable(true);
+    setTiktokAvailable(true);
     setAdditionalImages([]);
     setFeatures([]);
-    setSoldCount('0');
-    setTestimonials([]);
   };
 
-  // Add a new type row
-  const addTypeRow = () => {
-    setFormTypes([...formTypes, { name: '', extraPrice: 0, image: '' }]);
+  // Add a new variant row to the subform
+  const addVariantRow = () => {
+    setFormVariants([
+      ...formVariants,
+      { size: '', price: 0, shopeePrice: undefined, tokopediaPrice: undefined, lazadaPrice: undefined, tiktokPrice: undefined, shopeeUrl: '', tokopediaUrl: '', lazadaUrl: '', tiktokUrl: '' }
+    ]);
   };
 
-  const handleTypeChange = (index: number, key: keyof ProductType, value: any) => {
-    const updated = [...formTypes];
-    const isNumeric = ['extraPrice'].includes(key);
+  // Update a specific field in a variant row
+  const handleVariantChange = (index: number, key: keyof ProductVariant, value: any) => {
+    const updated = [...formVariants];
+    const isNumeric = ['price', 'shopeePrice', 'tokopediaPrice', 'lazadaPrice', 'tiktokPrice'].includes(key);
     updated[index] = {
       ...updated[index],
       [key]: isNumeric ? (value === '' ? undefined : Number(value)) : value
     };
-    setFormTypes(updated);
+    setFormVariants(updated);
   };
 
-  const removeTypeRow = (index: number) => {
-    setFormTypes(formTypes.filter((_, i) => i !== index));
-  };
-
-  // Add a new size row
-  const addSizeRow = () => {
-    setFormSizes([...formSizes, { name: '', extraPrice: 0 }]);
-  };
-
-  const handleSizeChange = (index: number, key: keyof ProductSize, value: any) => {
-    const updated = [...formSizes];
-    const isNumeric = ['extraPrice'].includes(key);
-    updated[index] = {
-      ...updated[index],
-      [key]: isNumeric ? (value === '' ? undefined : Number(value)) : value
-    };
-    setFormSizes(updated);
-  };
-
-  const removeSizeRow = (index: number) => {
-    setFormSizes(formSizes.filter((_, i) => i !== index));
+  // Remove a variant row
+  const removeVariantRow = (index: number) => {
+    setFormVariants(formVariants.filter((_, i) => i !== index));
   };
 
   // Upload Image Handler
@@ -444,26 +420,34 @@ export default function AdminDashboardPage() {
       image: imageUrl,
       status,
       description,
-      rating: Number(rating),
-      reviews_count: Number(reviewsCount),
-      shopee_link: shopeeLink || 'https://shopee.co.id',
+      rating: editingId ? (products.find(p => p.id === editingId)?.rating || 5.0) : 5.0,
+      reviews_count: editingId ? (products.find(p => p.id === editingId)?.reviewsCount || 0) : 0,
+      shopee_link: shopeeLink || (formVariants.length > 0 ? formVariants[0].shopeeUrl : 'https://shopee.co.id'),
+      tokopedia_link: tokopediaLink || (formVariants.length > 0 ? formVariants[0].tokopediaUrl : 'https://tokopedia.com'),
       shopeeAvailable,
+      tokopediaAvailable,
+      lazadaAvailable,
+      tiktokAvailable,
       images: additionalImages,
       specifications: {
-        material: material,
-        size: sizeSpec,
+        material: '100% Premium Dacron Silikon & Kain Rasfur Halus',
+        size: formVariants.length > 0 ? formVariants[0].size : 'Ukuran Standar',
         washing: 'Bisa dicuci dengan mesin (putaran lembut)',
         safeForKids: true,
+        lazadaLink: lazadaLink || '',
+        tiktokLink: tiktokLink || '',
         shopeePrice: shopeePrice ? Number(shopeePrice) : undefined,
+        tokopediaPrice: tokopediaPrice ? Number(tokopediaPrice) : undefined,
+        lazadaPrice: lazadaPrice ? Number(lazadaPrice) : undefined,
+        tiktokPrice: tiktokPrice ? Number(tiktokPrice) : undefined,
         shopeeAvailable,
+        tokopediaAvailable,
+        lazadaAvailable,
+        tiktokAvailable,
         images: additionalImages,
-        features: features,
-        soldCount: Number(soldCount),
-        testimonials: testimonials,
-        types: formTypes,
-        sizes: formSizes
+        features,
       },
-      variants: [] // Kept empty for backwards compatibility with DB schema
+      variants: formVariants
     };
 
     try {
@@ -479,6 +463,7 @@ export default function AdminDashboardPage() {
         rating: productData.rating,
         reviews_count: productData.reviews_count,
         shopee_link: productData.shopee_link,
+        tokopedia_link: productData.tokopedia_link,
         specifications: productData.specifications,
         variants: productData.variants
       });
@@ -490,13 +475,17 @@ export default function AdminDashboardPage() {
         ...productData, 
         reviewsCount: productData.reviews_count,
         shopeeLink: productData.shopee_link,
+        tokopediaLink: productData.tokopedia_link,
+        lazadaLink: productData.specifications.lazadaLink,
+        tiktokLink: productData.specifications.tiktokLink,
         shopeePrice: productData.specifications.shopeePrice,
+        tokopediaPrice: productData.specifications.tokopediaPrice,
+        lazadaPrice: productData.specifications.lazadaPrice,
+        tiktokPrice: productData.specifications.tiktokPrice,
         shopeeAvailable: productData.specifications.shopeeAvailable,
-        specifications: {
-          ...productData.specifications,
-          types: formTypes,
-          sizes: formSizes,
-        },
+        tokopediaAvailable: productData.specifications.tokopediaAvailable,
+        lazadaAvailable: productData.specifications.lazadaAvailable,
+        tiktokAvailable: productData.specifications.tiktokAvailable,
       };
 
       if (editingId) {
@@ -514,23 +503,23 @@ export default function AdminDashboardPage() {
         ...productData,
         reviewsCount: productData.reviews_count,
         shopeeLink: productData.shopee_link,
+        tokopediaLink: productData.tokopedia_link,
+        lazadaLink: productData.specifications.lazadaLink,
+        tiktokLink: productData.specifications.tiktokLink,
         shopeePrice: productData.specifications.shopeePrice,
+        tokopediaPrice: productData.specifications.tokopediaPrice,
+        lazadaPrice: productData.specifications.lazadaPrice,
+        tiktokPrice: productData.specifications.tiktokPrice,
         shopeeAvailable: productData.specifications.shopeeAvailable,
-        specifications: {
-          ...productData.specifications,
-          types: formTypes,
-          sizes: formSizes,
-        },
+        tokopediaAvailable: productData.specifications.tokopediaAvailable,
+        lazadaAvailable: productData.specifications.lazadaAvailable,
+        tiktokAvailable: productData.specifications.tiktokAvailable,
       };
       if (editingId) {
-        const updated = products.map(p => p.id === editingId ? fallbackProduct as any : p);
-        setProducts(updated);
-        localStorage.setItem('simoengil_mock_products', JSON.stringify(updated));
+        setProducts(products.map(p => p.id === editingId ? fallbackProduct as any : p));
         alert(`💾 Disimpan di Memory Lokal (Supabase offline/belum setup): ${err.message}`);
       } else {
-        const updated = [...products, fallbackProduct as any];
-        setProducts(updated);
-        localStorage.setItem('simoengil_mock_products', JSON.stringify(updated));
+        setProducts([...products, fallbackProduct as any]);
         alert(`💾 Ditambahkan di Memory Lokal (Supabase offline/belum setup): ${err.message}`);
       }
       resetForm();
@@ -550,9 +539,7 @@ export default function AdminDashboardPage() {
       alert('🗑️ Produk berhasil dihapus dari database Supabase!');
     } catch (err: any) {
       console.warn('Supabase delete failed, fallback to local edit:', err);
-      const updated = products.filter(p => p.id !== id);
-      setProducts(updated);
-      localStorage.setItem('simoengil_mock_products', JSON.stringify(updated));
+      setProducts(products.filter(p => p.id !== id));
       alert(`🗑️ Produk dihapus dari list lokal (Supabase belum tersambung).`);
     }
   };
@@ -566,26 +553,27 @@ export default function AdminDashboardPage() {
     setImageUrl(p.image);
     setStatus(p.status);
     setDescription(p.description);
-    setRating(String(p.rating || 5.0));
-    setReviewsCount(String(p.reviewsCount || 0));
-    setMaterial(p.specifications?.material || '100% Premium Dacron Silikon & Kain Rasfur Halus');
-    setSizeSpec(p.specifications?.size || 'Ukuran Standar');
-    // Derive types and sizes for backward compatibility (from old variants array) if specifications lack them
-    const derivedTypes = p.specifications?.types || (p.variants ? Array.from(new Set(p.variants.map((v: any) => v.type).filter(Boolean)))
-      .map((t) => ({ name: t as string, extraPrice: 0 }))
-      : []);
-    const derivedSizes = p.specifications?.sizes || (p.variants ? Array.from(new Set(p.variants.map((v: any) => v.size).filter(Boolean)))
-      .map((s) => ({ name: s as string, extraPrice: 0 }))
-      : []);
-    setFormTypes(derivedTypes);
-    setFormSizes(derivedSizes);
+    setFormVariants((p.variants || []).map(v => ({
+      ...v,
+      shopeeAvailable: v.shopeeAvailable !== undefined ? v.shopeeAvailable : true,
+      tokopediaAvailable: v.tokopediaAvailable !== undefined ? v.tokopediaAvailable : true,
+      lazadaAvailable: v.lazadaAvailable !== undefined ? v.lazadaAvailable : true,
+      tiktokAvailable: v.tiktokAvailable !== undefined ? v.tiktokAvailable : true,
+    })));
     setShopeeLink(p.shopeeLink || '');
+    setTokopediaLink(p.tokopediaLink || '');
+    setLazadaLink(p.lazadaLink || p.specifications?.lazadaLink || '');
+    setTiktokLink(p.tiktokLink || p.specifications?.tiktokLink || '');
     setShopeePrice(p.shopeePrice ? String(p.shopeePrice) : p.specifications?.shopeePrice ? String(p.specifications.shopeePrice) : '');
+    setTokopediaPrice(p.tokopediaPrice ? String(p.tokopediaPrice) : p.specifications?.tokopediaPrice ? String(p.specifications.tokopediaPrice) : '');
+    setLazadaPrice(p.lazadaPrice ? String(p.lazadaPrice) : p.specifications?.lazadaPrice ? String(p.specifications.lazadaPrice) : '');
+    setTiktokPrice(p.tiktokPrice ? String(p.tiktokPrice) : p.specifications?.tiktokPrice ? String(p.specifications.tiktokPrice) : '');
     setShopeeAvailable(p.shopeeAvailable !== undefined ? p.shopeeAvailable : (p.specifications?.shopeeAvailable !== undefined ? p.specifications.shopeeAvailable : true));
+    setTokopediaAvailable(p.tokopediaAvailable !== undefined ? p.tokopediaAvailable : (p.specifications?.tokopediaAvailable !== undefined ? p.specifications.tokopediaAvailable : true));
+    setLazadaAvailable(p.lazadaAvailable !== undefined ? p.lazadaAvailable : (p.specifications?.lazadaAvailable !== undefined ? p.specifications.lazadaAvailable : true));
+    setTiktokAvailable(p.tiktokAvailable !== undefined ? p.tiktokAvailable : (p.specifications?.tiktokAvailable !== undefined ? p.specifications.tiktokAvailable : true));
     setAdditionalImages(p.specifications?.images || p.images || []);
     setFeatures(p.specifications?.features || []);
-    setSoldCount(String(p.specifications?.soldCount || 0));
-    setTestimonials(p.specifications?.testimonials || []);
   };
 
   // Logout handler
@@ -929,52 +917,6 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* Rating & Ulasan & Terjual */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Bintang / Rating
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      required
-                      placeholder="5.0"
-                      value={rating}
-                      onChange={(e) => setRating(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block" title="Jumlah Ulasan">
-                      Jumlah Ulasan
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="0"
-                      value={reviewsCount}
-                      onChange={(e) => setReviewsCount(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block" title="Jumlah Pembelian / Terjual">
-                      Jumlah Pembelian
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="0"
-                      value={soldCount}
-                      onChange={(e) => setSoldCount(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    />
-                  </div>
-                </div>
-
                 {/* Image URL & Status Tag */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -1088,189 +1030,46 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* Spesifikasi (Bahan & Dimensi) */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-2">
-                    Spesifikasi & Bahan Premium
-                  </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 block">Bahan Utama</label>
-                      <input
-                        type="text"
-                        placeholder="100% Premium Dacron..."
-                        value={material}
-                        onChange={(e) => setMaterial(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 block">Dimensi / Ukuran</label>
-                      <input
-                        type="text"
-                        placeholder="Tinggi 40cm, Lebar 20cm"
-                        value={sizeSpec}
-                        onChange={(e) => setSizeSpec(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Kelebihan Produk */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Kelebihan Boneka Simoengil
+                      Kelebihan Produk (List)
                     </span>
                     <button
                       type="button"
-                      onClick={() => setFeatures([...features, { icon: '✨', title: '', description: '' }])}
+                      onClick={() => setFeatures([...features, ''])}
                       className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-500 hover:text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
-                      <span>Tambah Kelebihan</span>
+                      <span>Tambah Fitur</span>
                     </button>
                   </div>
 
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {features.length === 0 ? (
                       <p className="text-[10px] text-slate-400 italic text-center py-3 bg-white/50 border border-dashed border-slate-200 rounded-xl">
-                        Belum ada kelebihan. Klik &quot;Tambah Kelebihan&quot; di atas.
+                        Belum ada fitur. Klik &quot;Tambah Fitur&quot; di atas.
                       </p>
                     ) : (
                       features.map((feat, idx) => (
-                        <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start gap-3 relative">
+                        <div key={idx} className="flex gap-2 items-center">
                           <input
                             type="text"
-                            placeholder="Emoji 🪡"
-                            value={feat.icon}
+                            placeholder="Contoh: Bahan Premium Rasfur"
+                            value={feat}
                             onChange={(e) => {
                               const updated = [...features];
-                              updated[idx].icon = e.target.value;
+                              updated[idx] = e.target.value;
                               setFeatures(updated);
                             }}
-                            className="w-12 text-center px-1 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-lg focus:outline-none focus:border-pink-400 transition-all"
+                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
                           />
-                          <div className="flex-1 space-y-2">
-                            <input
-                              type="text"
-                              placeholder="Judul Kelebihan (Misal: Jahitan Super Kuat)"
-                              value={feat.title}
-                              onChange={(e) => {
-                                const updated = [...features];
-                                updated[idx].title = e.target.value;
-                                setFeatures(updated);
-                              }}
-                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-400 transition-all"
-                            />
-                            <textarea
-                              rows={2}
-                              placeholder="Penjelasan detail..."
-                              value={feat.description}
-                              onChange={(e) => {
-                                const updated = [...features];
-                                updated[idx].description = e.target.value;
-                                setFeatures(updated);
-                              }}
-                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600 focus:outline-none focus:border-pink-400 transition-all resize-none"
-                            />
-                          </div>
                           <button
                             type="button"
                             onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
-                            className="p-1.5 bg-rose-50 text-rose-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg transition-colors absolute top-3 right-3"
-                            title="Hapus Kelebihan"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Testimoni Pelanggan */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Testimoni Pelanggan
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setTestimonials([...testimonials, { name: '', rating: 5, message: '', date: '', avatar: '' }])}
-                      className="flex items-center gap-1 text-[10px] font-extrabold text-blue-500 hover:text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Tambah Testimoni</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                    {testimonials.length === 0 ? (
-                      <p className="text-[10px] text-slate-400 italic text-center py-3 bg-white/50 border border-dashed border-slate-200 rounded-xl">
-                        Belum ada testimoni. Klik &quot;Tambah Testimoni&quot; di atas.
-                      </p>
-                    ) : (
-                      testimonials.map((testi, idx) => (
-                        <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 pr-10 flex flex-col gap-2 relative">
-                          <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                            <input
-                              type="text"
-                              placeholder="Nama Pelanggan"
-                              value={testi.name}
-                              onChange={(e) => {
-                                const updated = [...testimonials];
-                                updated[idx].name = e.target.value;
-                                // Auto generate avatar initials
-                                updated[idx].avatar = e.target.value.substring(0, 2).toUpperCase();
-                                setTestimonials(updated);
-                              }}
-                              className="flex-1 min-w-[120px] px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-400 transition-all"
-                            />
-                            <div className="w-24 shrink-0">
-                              <input
-                                type="number"
-                                min="1"
-                                max="5"
-                                placeholder="Rating (1-5)"
-                                value={testi.rating}
-                                onChange={(e) => {
-                                  const updated = [...testimonials];
-                                  updated[idx].rating = Number(e.target.value);
-                                  setTestimonials(updated);
-                                }}
-                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-pink-400 transition-all"
-                              />
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="Tanggal"
-                              value={testi.date || ''}
-                              onChange={(e) => {
-                                const updated = [...testimonials];
-                                updated[idx].date = e.target.value;
-                                setTestimonials(updated);
-                              }}
-                              className="w-24 shrink-0 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-pink-400 transition-all"
-                            />
-                          </div>
-                          <textarea
-                            rows={2}
-                            placeholder="Pesan ulasan..."
-                            value={testi.message}
-                            onChange={(e) => {
-                              const updated = [...testimonials];
-                              updated[idx].message = e.target.value;
-                              setTestimonials(updated);
-                            }}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600 focus:outline-none focus:border-pink-400 transition-all resize-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setTestimonials(testimonials.filter((_, i) => i !== idx))}
-                            className="p-1.5 bg-rose-50 text-rose-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg transition-colors absolute top-2 right-2"
-                            title="Hapus Testimoni"
+                            className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus Fitur"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1312,9 +1111,36 @@ export default function AdminDashboardPage() {
                       />
                       <span className="text-[10px] font-bold text-orange-600">Shopee</span>
                     </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded-lg border border-emerald-100 select-none shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={tokopediaAvailable}
+                        onChange={(e) => setTokopediaAvailable(e.target.checked)}
+                        className="accent-emerald-500 rounded"
+                      />
+                      <span className="text-[10px] font-bold text-[#42b549]">Tokopedia</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded-lg border border-blue-100 select-none shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={lazadaAvailable}
+                        onChange={(e) => setLazadaAvailable(e.target.checked)}
+                        className="accent-blue-600 rounded"
+                      />
+                      <span className="text-[10px] font-bold text-blue-600">Lazada</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded-lg border border-slate-200 select-none shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={tiktokAvailable}
+                        onChange={(e) => setTiktokAvailable(e.target.checked)}
+                        className="accent-slate-800 rounded"
+                      />
+                      <span className="text-[10px] font-bold text-slate-800">TikTok</span>
+                    </label>
                   </div>
 
-                  {/* Shopee Link & Price */}
+                  {/* Shopee & Tokopedia Links */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-orange-500 block">
@@ -1330,6 +1156,53 @@ export default function AdminDashboardPage() {
                       />
                     </div>
                     <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-[#42b549] block">
+                        Tokopedia Link
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tokopedia.com/..."
+                        value={tokopediaLink}
+                        onChange={(e) => setTokopediaLink(e.target.value)}
+                        disabled={!tokopediaAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-emerald-100 focus:border-emerald-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lazada & TikTok Links */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-blue-900 block">
+                        Lazada Link
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://lazada.co.id/..."
+                        value={lazadaLink}
+                        onChange={(e) => setLazadaLink(e.target.value)}
+                        disabled={!lazadaAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-blue-100 focus:border-blue-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-800 block">
+                        TikTok Link
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://tiktok.com/..."
+                        value={tiktokLink}
+                        onChange={(e) => setTiktokLink(e.target.value)}
+                        disabled={!tiktokAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-slate-200 focus:border-slate-400 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Shopee & Tokopedia Prices */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
                       <label className="text-[9px] font-bold text-orange-500 block">
                         Harga Shopee (IDR)
                       </label>
@@ -1342,109 +1215,61 @@ export default function AdminDashboardPage() {
                         className="w-full px-2 py-1.5 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-[#42b549] block">
+                        Harga Tokopedia (IDR)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="29900"
+                        value={tokopediaPrice}
+                        onChange={(e) => setTokopediaPrice(e.target.value)}
+                        disabled={!tokopediaAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-emerald-100 focus:border-emerald-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lazada & TikTok Prices */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-blue-900 block">
+                        Harga Lazada (IDR)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="29900"
+                        value={lazadaPrice}
+                        onChange={(e) => setLazadaPrice(e.target.value)}
+                        disabled={!lazadaAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-blue-100 focus:border-blue-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-800 block">
+                        Harga TikTok (IDR)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="31900"
+                        value={tiktokPrice}
+                        onChange={(e) => setTiktokPrice(e.target.value)}
+                        disabled={!tiktokAvailable}
+                        className="w-full px-2 py-1.5 bg-white border border-slate-200 focus:border-slate-400 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* DYNAMIC TYPES SECTION */}
+                {/* DYNAMIC VARIANTS SECTION */}
                 <div className="border-t border-slate-100 pt-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Kelola Variasi (Warna/Model)
+                      Varian Ukuran & Marketplace Link
                     </span>
                     <button
                       type="button"
-                      onClick={addTypeRow}
-                      className="flex items-center gap-1 text-[10px] font-extrabold text-pink-500 hover:text-pink-600 bg-pink-50 border border-pink-100 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Tambah Variasi</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    {formTypes.length === 0 ? (
-                      <p className="text-[10px] text-slate-400 text-center italic bg-slate-50/50 py-3 border border-dashed border-slate-200 rounded-xl">
-                        Belum ada variasi. Tambahkan jika produk memiliki pilihan warna atau model dengan foto berbeda.
-                      </p>
-                    ) : (
-                      formTypes.map((t, i) => (
-                        <div key={i} className="bg-slate-50/60 rounded-2xl border border-slate-200/60 p-3 space-y-2 relative">
-                          <button
-                            type="button"
-                            onClick={() => removeTypeRow(i)}
-                            className="absolute top-2.5 right-2.5 p-1 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-md transition-colors cursor-pointer"
-                            title="Hapus Variasi"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                          <span className="text-[10px] font-black text-slate-400">Variasi #{i + 1}</span>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400">Nama Variasi</span>
-                              <input
-                                type="text"
-                                placeholder="Cokelat, Pita Merah"
-                                value={t.name}
-                                onChange={(e) => handleTypeChange(i, 'name', e.target.value)}
-                                className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400">Tambahan Harga (IDR)</span>
-                              <input
-                                type="number"
-                                placeholder="0"
-                                value={t.extraPrice || ''}
-                                onChange={(e) => handleTypeChange(i, 'extraPrice', e.target.value)}
-                                className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-1 mt-2">
-                            <span className="text-[9px] font-bold text-slate-400">Foto Variasi (Opsional)</span>
-                            <div className="flex items-center gap-2 w-full">
-                              <input
-                                type="text"
-                                placeholder="URL Foto atau Upload"
-                                value={t.image || ''}
-                                onChange={(e) => handleTypeChange(i, 'image', e.target.value)}
-                                className="flex-1 px-2 py-1 bg-white border border-slate-200 focus:border-pink-300 rounded-lg text-[10px] font-medium text-slate-800"
-                              />
-                              {t.image && (
-                                <div className="relative w-6 h-6 rounded border border-slate-200 bg-white shrink-0 overflow-hidden">
-                                  <img src={t.image} alt={`Preview Var ${i + 1}`} className="w-full h-full object-cover" />
-                                </div>
-                              )}
-                              <label title="Upload Foto Variasi" className="shrink-0 p-1.5 bg-slate-100 hover:bg-pink-100 text-slate-400 hover:text-pink-600 rounded-lg transition-colors cursor-pointer">
-                                <Upload className="w-3 h-3" />
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    handleFileUpload(e, (url) => {
-                                      handleTypeChange(i, 'image', url);
-                                    });
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* DYNAMIC SIZES SECTION */}
-                <div className="border-t border-slate-100 pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Kelola Ukuran
-                    </span>
-                    <button
-                      type="button"
-                      onClick={addSizeRow}
+                      onClick={addVariantRow}
                       className="flex items-center gap-1 text-[10px] font-extrabold text-pink-500 hover:text-pink-600 bg-pink-50 border border-pink-100 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
@@ -1452,42 +1277,197 @@ export default function AdminDashboardPage() {
                     </button>
                   </div>
 
+                  {/* Form fields lists for variants */}
                   <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    {formSizes.length === 0 ? (
+                    {formVariants.length === 0 ? (
                       <p className="text-[10px] text-slate-400 text-center italic bg-slate-50/50 py-3 border border-dashed border-slate-200 rounded-xl">
-                        Belum ada ukuran. Tambahkan agar pembeli dapat memilih varian ukuran.
+                        Belum ada varian ukuran. Tambahkan agar pembeli dapat memilih ukuran di detail produk.
                       </p>
                     ) : (
-                      formSizes.map((s, i) => (
+                      formVariants.map((v, i) => (
                         <div key={i} className="bg-slate-50/60 rounded-2xl border border-slate-200/60 p-3 space-y-2 relative">
                           <button
                             type="button"
-                            onClick={() => removeSizeRow(i)}
+                            onClick={() => removeVariantRow(i)}
                             className="absolute top-2.5 right-2.5 p-1 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-md transition-colors cursor-pointer"
-                            title="Hapus Ukuran"
+                            title="Hapus Varian"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
-                          <span className="text-[10px] font-black text-slate-400">Ukuran #{i + 1}</span>
+
+                          <span className="text-[10px] font-black text-slate-400">Varian #{i + 1}</span>
+
+                          {/* Variant Availability Checkboxes */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 py-1">
+                            <label className="flex items-center gap-1 cursor-pointer bg-white px-1.5 py-1 rounded border border-orange-100 select-none shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={v.shopeeAvailable !== false}
+                                onChange={(e) => handleVariantChange(i, 'shopeeAvailable', e.target.checked)}
+                                className="accent-orange-500 rounded w-3 h-3"
+                              />
+                              <span className="text-[9px] font-bold text-orange-600">Shopee</span>
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer bg-white px-1.5 py-1 rounded border border-emerald-100 select-none shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={v.tokopediaAvailable !== false}
+                                onChange={(e) => handleVariantChange(i, 'tokopediaAvailable', e.target.checked)}
+                                className="accent-emerald-500 rounded w-3 h-3"
+                              />
+                              <span className="text-[9px] font-bold text-[#42b549]">Tokopedia</span>
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer bg-white px-1.5 py-1 rounded border border-blue-100 select-none shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={v.lazadaAvailable !== false}
+                                onChange={(e) => handleVariantChange(i, 'lazadaAvailable', e.target.checked)}
+                                className="accent-blue-600 rounded w-3 h-3"
+                              />
+                              <span className="text-[9px] font-bold text-blue-600">Lazada</span>
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer bg-white px-1.5 py-1 rounded border border-slate-200 select-none shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={v.tiktokAvailable !== false}
+                                onChange={(e) => handleVariantChange(i, 'tiktokAvailable', e.target.checked)}
+                                className="accent-slate-800 rounded w-3 h-3"
+                              />
+                              <span className="text-[9px] font-bold text-slate-800">TikTok</span>
+                            </label>
+                          </div>
+
                           <div className="grid grid-cols-2 gap-2">
+                            {/* Size Name */}
                             <div className="space-y-1">
                               <span className="text-[9px] font-bold text-slate-400">Nama Ukuran</span>
                               <input
                                 type="text"
-                                placeholder="11cm, Besar"
-                                value={s.name}
-                                onChange={(e) => handleSizeChange(i, 'name', e.target.value)}
+                                required
+                                placeholder="Jumbo (80cm)"
+                                value={v.size}
+                                onChange={(e) => handleVariantChange(i, 'size', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
                               />
                             </div>
+                            {/* Size Price */}
                             <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-400">Tambahan Harga (IDR)</span>
+                              <span className="text-[9px] font-bold text-slate-400">Harga Varian (IDR)</span>
                               <input
                                 type="number"
-                                placeholder="0"
-                                value={s.extraPrice || ''}
-                                onChange={(e) => handleSizeChange(i, 'extraPrice', e.target.value)}
+                                required
+                                placeholder="150000"
+                                value={v.price || ''}
+                                onChange={(e) => handleVariantChange(i, 'price', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Shopee Price */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-orange-500">Harga Shopee Varian</span>
+                              <input
+                                type="number"
+                                placeholder="34900"
+                                value={v.shopeePrice || ''}
+                                onChange={(e) => handleVariantChange(i, 'shopeePrice', e.target.value)}
+                                disabled={v.shopeeAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                            {/* Tokopedia Price */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-[#42b549]">Harga Tokopedia Varian</span>
+                              <input
+                                type="number"
+                                placeholder="29900"
+                                value={v.tokopediaPrice || ''}
+                                onChange={(e) => handleVariantChange(i, 'tokopediaPrice', e.target.value)}
+                                disabled={v.tokopediaAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-emerald-100 focus:border-emerald-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Lazada Price */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-blue-900">Harga Lazada Varian</span>
+                              <input
+                                type="number"
+                                placeholder="29900"
+                                value={v.lazadaPrice || ''}
+                                onChange={(e) => handleVariantChange(i, 'lazadaPrice', e.target.value)}
+                                disabled={v.lazadaAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-blue-100 focus:border-blue-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                            {/* TikTok Price */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-slate-800">Harga TikTok Varian</span>
+                              <input
+                                type="number"
+                                placeholder="31900"
+                                value={v.tiktokPrice || ''}
+                                onChange={(e) => handleVariantChange(i, 'tiktokPrice', e.target.value)}
+                                disabled={v.tiktokAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-slate-200 focus:border-slate-400 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Shopee URL */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-orange-500">Shopee Link Varian</span>
+                              <input
+                                type="text"
+                                placeholder="https://shopee.co.id/..."
+                                value={v.shopeeUrl}
+                                onChange={(e) => handleVariantChange(i, 'shopeeUrl', e.target.value)}
+                                disabled={v.shopeeAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                            {/* Tokopedia URL */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-[#42b549]">Tokopedia Link Varian</span>
+                              <input
+                                type="text"
+                                placeholder="https://tokopedia.com/..."
+                                value={v.tokopediaUrl}
+                                onChange={(e) => handleVariantChange(i, 'tokopediaUrl', e.target.value)}
+                                disabled={v.tokopediaAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-emerald-100 focus:border-emerald-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Lazada URL */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-blue-900">Lazada Link Varian</span>
+                              <input
+                                type="text"
+                                placeholder="https://lazada.co.id/..."
+                                value={v.lazadaUrl || ''}
+                                onChange={(e) => handleVariantChange(i, 'lazadaUrl', e.target.value)}
+                                disabled={v.lazadaAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-blue-100 focus:border-blue-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              />
+                            </div>
+                            {/* TikTok URL */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-slate-800">TikTok Link Varian</span>
+                              <input
+                                type="text"
+                                placeholder="https://tiktok.com/..."
+                                value={v.tiktokUrl || ''}
+                                onChange={(e) => handleVariantChange(i, 'tiktokUrl', e.target.value)}
+                                disabled={v.tiktokAvailable === false}
+                                className="w-full px-2 py-1 bg-white border border-slate-200 focus:border-slate-400 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
                               />
                             </div>
                           </div>

@@ -1,24 +1,24 @@
-'use client';
-
 import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { X, Heart, Trash2, ShoppingCart, Smile } from 'lucide-react';
-import { Product } from '@/data/products';
+import { X, ShoppingCart, Trash2, Smile, Plus, Minus } from 'lucide-react';
+import { CartItem, Product } from '@/data/products';
 import confetti from 'canvas-confetti';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  wishlistItems: Product[];
-  onRemoveItem: (id: string) => void;
+  cartItems: CartItem[];
+  onRemoveItem: (cartItemId: string) => void;
+  onUpdateQuantity: (cartItemId: string, delta: number) => void;
   onDetailClick: (product: Product) => void;
 }
 
 export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   isOpen,
   onClose,
-  wishlistItems,
+  cartItems,
   onRemoveItem,
+  onUpdateQuantity,
   onDetailClick,
 }) => {
   // Prevent background scroll when drawer is open
@@ -45,16 +45,19 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   };
 
   const handleCheckoutAll = () => {
-    if (wishlistItems.length === 0) return;
+    if (cartItems.length === 0) return;
     confetti({
       particleCount: 150,
       spread: 80,
       origin: { y: 0.6 },
       colors: ['#ff8fa3', '#fff3b0', '#a8dadc', '#ff4d6d'],
     });
-    // Open Shopee as default or prompt
+    // Open Shopee or Whatsapp
     window.open('https://shopee.co.id', '_blank', 'noopener,noreferrer');
   };
+
+  const totalItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalPrice = cartItems.reduce((acc, item) => acc + (item.selectedPrice * item.quantity), 0);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -72,11 +75,11 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
           <div className="p-6 border-b border-blue-50 flex items-center justify-between bg-blue-50/20">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-pink-50 border border-pink-100 text-pink-500">
-                <Heart className="w-5 h-5 fill-current" />
+                <ShoppingCart className="w-5 h-5 fill-current" />
               </div>
               <div>
-                <h3 className="font-extrabold text-slate-800 text-lg">Teman Impianku</h3>
-                <p className="text-xs text-slate-500">{wishlistItems.length} plushie disimpan</p>
+                <h3 className="font-extrabold text-slate-800 text-lg">Keranjang Belanja</h3>
+                <p className="text-xs text-slate-500">{totalItemCount} barang</p>
               </div>
             </div>
             
@@ -90,15 +93,15 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
 
           {/* List Items */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {wishlistItems.length === 0 ? (
+            {cartItems.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
                 <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 text-blue-300 animate-float">
                   <Smile className="w-12 h-12" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-700 text-base">Belum Ada Teman Peluk</h4>
+                  <h4 className="font-bold text-slate-700 text-base">Keranjang Kosong</h4>
                   <p className="text-xs text-slate-400 max-w-xs mt-1">
-                    Cari boneka favoritmu di katalog dan klik ikon hati untuk menyimpannya di sini!
+                    Cari boneka favoritmu di katalog dan masukkan ke keranjang untuk diadopsi!
                   </p>
                 </div>
                 <button
@@ -109,9 +112,9 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                 </button>
               </div>
             ) : (
-              wishlistItems.map((item) => (
+              cartItems.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.cartItemId}
                   className="flex gap-4 p-3 rounded-2xl border border-blue-50 hover:border-pink-100 bg-white hover:bg-pink-50/10 transition-all group"
                 >
                   {/* Thumbnail */}
@@ -143,68 +146,80 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                       >
                         {item.name}
                       </h4>
+                      {(item.selectedVariantType || item.selectedVariantSize) && (
+                        <div className="mt-1 space-y-0.5">
+                          {item.selectedVariantType && (
+                            <p className="text-[10px] text-slate-500">
+                              Variasi: <span className="font-semibold text-slate-700">{item.selectedVariantType}</span>
+                            </p>
+                          )}
+                          {item.selectedVariantSize && (
+                            <p className="text-[10px] text-slate-500">
+                              Ukuran: <span className="font-semibold text-slate-700">{item.selectedVariantSize}</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
                       <p className="text-xs text-pink-500 font-extrabold mt-0.5">
-                        {formatIDR(item.price)}
+                        {formatIDR(item.selectedPrice)}
                       </p>
                     </div>
 
-                    {/* Actions inside Item */}
-                    <div className="flex items-center gap-2 mt-2">
+                    {/* Quantity Control */}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => onUpdateQuantity(item.cartItemId, -1)}
+                          className="p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="px-3 text-xs font-bold text-slate-700 min-w-[30px] text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => onUpdateQuantity(item.cartItemId, 1)}
+                          className="p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Remove Button */}
                       <button
-                        onClick={() => {
-                          onDetailClick(item);
-                          onClose();
-                        }}
-                        className="text-[11px] font-bold text-blue-600 hover:text-pink-500 hover:underline transition-all cursor-pointer"
+                        onClick={() => onRemoveItem(item.cartItemId)}
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+                        aria-label="Hapus"
                       >
-                        Detail
-                      </button>
-                      <span className="text-slate-300 text-xs">•</span>
-                      <button
-                        onClick={() => window.open(item.shopeeLink, '_blank')}
-                        className="text-[11px] font-bold text-orange-600 hover:underline transition-all cursor-pointer"
-                      >
-                        Shopee
-                      </button>
-                      <span className="text-slate-300 text-xs">•</span>
-                      <button
-                        onClick={() => window.open(item.tokopediaLink, '_blank')}
-                        className="text-[11px] font-bold text-green-600 hover:underline transition-all cursor-pointer"
-                      >
-                        Tokopedia
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => onRemoveItem(item.id)}
-                    className="self-center p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
-                    aria-label="Hapus"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               ))
             )}
           </div>
 
           {/* Footer Actions */}
-          {wishlistItems.length > 0 && (
+          {cartItems.length > 0 && (
             <div className="p-6 border-t border-blue-50 space-y-3 bg-blue-50/10">
+              <div className="flex justify-between items-center mb-2 px-1">
+                <span className="text-sm font-semibold text-slate-500">Total Belanja</span>
+                <span className="text-lg font-black text-pink-500">{formatIDR(totalPrice)}</span>
+              </div>
               <button
                 onClick={handleCheckoutAll}
                 className="w-full py-3 bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white rounded-2xl font-bold text-sm transition-all shadow-md shadow-pink-500/10 hover:shadow-lg hover:scale-[1.01] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Beli Semua di Shopee</span>
+                <span>Beli Sekarang di Shopee</span>
               </button>
               
               <button
                 onClick={onClose}
                 className="w-full py-3 border border-slate-200 hover:border-slate-300 text-slate-600 hover:bg-slate-50 rounded-2xl font-bold text-sm transition-all text-center cursor-pointer"
               >
-                Lanjutkan Jelajah
+                Lanjutkan Belanja
               </button>
             </div>
           )}

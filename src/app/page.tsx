@@ -62,7 +62,7 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cart, setCart] = useState<import('@/data/products').CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
@@ -108,12 +108,12 @@ export default function Home() {
 
   // Load wishlist from localStorage on mount & Fetch Supabase products & Check Admin Auth
   useEffect(() => {
-    const savedWishlist = localStorage.getItem('simoengil_wishlist');
-    if (savedWishlist) {
+    const savedCart = localStorage.getItem('simoengil_cart');
+    if (savedCart) {
       try {
-        setWishlist(JSON.parse(savedWishlist));
+        setCart(JSON.parse(savedCart));
       } catch (e) {
-        console.error('Failed to load wishlist', e);
+        console.error('Failed to load cart', e);
       }
     }
 
@@ -151,30 +151,32 @@ export default function Home() {
                 size: specs.size || 'Standard',
                 washing: specs.washing || 'Bisa dicuci mesin',
                 safeForKids: specs.safeForKids !== undefined ? specs.safeForKids : true,
-                lazadaLink: specs.lazadaLink || '',
-                tiktokLink: specs.tiktokLink || '',
                 shopeePrice: specs.shopeePrice || undefined,
-                tokopediaPrice: specs.tokopediaPrice || undefined,
-                lazadaPrice: specs.lazadaPrice || undefined,
-                tiktokPrice: specs.tiktokPrice || undefined,
                 shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-                tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-                lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-                tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
+                features: specs.features || [],
+                images: specs.images || [],
+                soldCount: specs.soldCount || 0,
+                testimonials: specs.testimonials || [],
               },
               variants: (item.variants || []).map((v: Partial<ProductVariant>) => ({
                 ...v,
                 shopeeAvailable: v.shopeeAvailable !== undefined ? v.shopeeAvailable : true,
-                tokopediaAvailable: v.tokopediaAvailable !== undefined ? v.tokopediaAvailable : true,
-                lazadaAvailable: v.lazadaAvailable !== undefined ? v.lazadaAvailable : true,
-                tiktokAvailable: v.tiktokAvailable !== undefined ? v.tiktokAvailable : true,
               }))
             };
           });
           setProductsList(mappedData);
+        } else {
+          const localMockStr = localStorage.getItem('simoengil_mock_products');
+          if (localMockStr) {
+            setProductsList(JSON.parse(localMockStr));
+          }
         }
       } catch (err) {
         console.warn('Supabase fetch failed, falling back to local products list:', err);
+        const localMockStr = localStorage.getItem('simoengil_mock_products');
+        if (localMockStr) {
+          setProductsList(JSON.parse(localMockStr));
+        }
       }
     };
 
@@ -230,23 +232,47 @@ export default function Home() {
     };
   }, []);
 
-  // Sync wishlist to localStorage
-  const handleWishlistToggle = (id: string) => {
-    let updatedWishlist: string[];
-    if (wishlist.includes(id)) {
-      updatedWishlist = wishlist.filter(item => item !== id);
+  // Sync cart to localStorage
+  const handleUpdateCartQuantity = (cartItemId: string, delta: number) => {
+    let updatedCart = cart.map(item => {
+      if (item.cartItemId === cartItemId) {
+        return { ...item, quantity: Math.max(1, item.quantity + delta) };
+      }
+      return item;
+    });
+    setCart(updatedCart);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updatedCart));
+  };
+  
+  const handleAddToCart = (product: Product, variantSize?: string) => {
+    const cartItemId = variantSize ? `${product.id}-${variantSize}` : product.id;
+    const existingItem = cart.find(item => item.cartItemId === cartItemId);
+    
+    let updatedCart;
+    if (existingItem) {
+      updatedCart = cart.map(item => 
+        item.cartItemId === cartItemId 
+          ? { ...item, quantity: item.quantity + 1 } 
+          : item
+      );
     } else {
-      updatedWishlist = [...wishlist, id];
+      let price = product.price;
+      if (variantSize && product.variants) {
+        const v = product.variants.find(v => v.size === variantSize);
+        if (v && v.price) price = v.price;
+      }
+      updatedCart = [...cart, { ...product, cartItemId, selectedVariantSize: variantSize, quantity: 1, selectedPrice: price }];
     }
-    setWishlist(updatedWishlist);
-    localStorage.setItem('simoengil_wishlist', JSON.stringify(updatedWishlist));
+    
+    setCart(updatedCart);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updatedCart));
+    setIsWishlistOpen(true);
   };
 
-  // Remove single item from wishlist drawer
-  const handleRemoveWishlistItem = (id: string) => {
-    const updatedWishlist = wishlist.filter(item => item !== id);
-    setWishlist(updatedWishlist);
-    localStorage.setItem('simoengil_wishlist', JSON.stringify(updatedWishlist));
+  const handleRemoveCartItem = (cartItemId: string) => {
+    const updatedCart = cart.filter(item => item.cartItemId !== cartItemId);
+    setCart(updatedCart);
+    localStorage.setItem('simoengil_cart', JSON.stringify(updatedCart));
   };
 
   // Filter products using dynamic productsList
@@ -261,8 +287,7 @@ export default function Home() {
     return 0; // 'terbaru' uses default order
   });
 
-  // Get wishlisted product details
-  const wishlistProducts = productsList.filter(product => wishlist.includes(product.id));
+
 
   // Open product detail
   const handleProductDetailClick = (product: Product) => {
@@ -371,12 +396,12 @@ export default function Home() {
             <button
               onClick={() => setIsWishlistOpen(true)}
               className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
-              aria-label="Buka Wishlist"
+              aria-label="Buka Keranjang"
             >
               <Heart className="w-5 h-5 group-hover:scale-105 transition-transform" />
-              {wishlist.length > 0 && (
+              {cart.length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
-                  {wishlist.length}
+                  {cart.length}
                 </span>
               )}
             </button>
@@ -805,8 +830,7 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 product={product}
-                isWishlisted={wishlist.includes(product.id)}
-                onWishlistToggle={handleWishlistToggle}
+                cartItemCount={cart.filter(c => c.id === product.id).reduce((sum, c) => sum + c.quantity, 0)}
                 onDetailClick={handleProductDetailClick}
               />
             ))}
@@ -1080,18 +1104,11 @@ export default function Home() {
         product={selectedProduct}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        isWishlisted={selectedProduct ? wishlist.includes(selectedProduct.id) : false}
-        onWishlistToggle={handleWishlistToggle}
+        onAddToCart={handleAddToCart}
       />
 
       {/* WISHLIST DRAWER */}
-      <WishlistDrawer
-        isOpen={isWishlistOpen}
-        onClose={() => setIsWishlistOpen(false)}
-        wishlistItems={wishlistProducts}
-        onRemoveItem={handleRemoveWishlistItem}
-        onDetailClick={handleProductDetailClick}
-      />
+      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} cartItems={cart} onRemoveItem={handleRemoveCartItem} onUpdateQuantity={handleUpdateCartQuantity} onDetailClick={handleProductDetailClick} />
       
     </div>
   );

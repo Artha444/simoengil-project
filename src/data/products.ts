@@ -1,37 +1,51 @@
+export interface ProductType {
+  name: string;
+  image?: string;
+  extraPrice?: number;
+}
+
+export interface ProductSize {
+  name: string;
+  extraPrice?: number;
+}
+
+export interface ProductFeature {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface ProductTestimonial {
+  name: string;
+  rating: number;
+  message: string;
+  date?: string;
+  avatar?: string;
+}
+
 export interface ProductSpecification {
   material: string;
   size: string;
   washing: string;
   safeForKids: boolean;
   shopeePrice?: number;
-  tokopediaPrice?: number;
-  lazadaPrice?: number;
-  tiktokPrice?: number;
-  lazadaLink?: string;
-  tiktokLink?: string;
   shopeeAvailable?: boolean;
-  tokopediaAvailable?: boolean;
-  lazadaAvailable?: boolean;
-  tiktokAvailable?: boolean;
   images?: string[];
-  features?: string[];
+  features?: ProductFeature[];
+  soldCount?: number;
+  testimonials?: ProductTestimonial[];
+  types?: ProductType[];
+  sizes?: ProductSize[];
 }
 
 export interface ProductVariant {
+  type?: string;
   size: string;
   price?: number;
   shopeePrice?: number;
-  tokopediaPrice?: number;
-  lazadaPrice?: number;
-  tiktokPrice?: number;
   shopeeUrl: string;
-  tokopediaUrl: string;
-  lazadaUrl?: string;
-  tiktokUrl?: string;
   shopeeAvailable?: boolean;
-  tokopediaAvailable?: boolean;
-  lazadaAvailable?: boolean;
-  tiktokAvailable?: boolean;
+  image?: string;
 }
 
 export interface Product {
@@ -45,17 +59,8 @@ export interface Product {
   rating: number;
   reviewsCount: number;
   shopeeLink: string;
-  tokopediaLink: string;
-  lazadaLink?: string;
-  tiktokLink?: string;
   shopeePrice?: number;
-  tokopediaPrice?: number;
-  lazadaPrice?: number;
-  tiktokPrice?: number;
   shopeeAvailable?: boolean;
-  tokopediaAvailable?: boolean;
-  lazadaAvailable?: boolean;
-  tiktokAvailable?: boolean;
   images?: string[];
   specifications: ProductSpecification;
   variants?: ProductVariant[];
@@ -73,23 +78,44 @@ export const PRODUCTS: Product[] = [
     rating: 4.9,
     reviewsCount: 142,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 94000,
-    tokopediaPrice: 89000,
-    lazadaPrice: 89000,
-    tiktokPrice: 91000,
     specifications: {
       material: '100% Premium Dacron Silikon Grade A & Bulu Rasfur Halus',
       size: 'Tinggi 35 cm, Lebar 25 cm',
       washing: 'Bisa dicuci dengan mesin (putaran lembut) atau cuci tangan',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Cokelat Klasik", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Medium (40cm)", extraPrice: 0 },
+        { name: "Jumbo (100cm)", extraPrice: 100000 }
+      ],
+      features: [
+        { icon: "🪡", title: "Jahitan Super Kuat", description: "Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi." },
+        { icon: "🛡️", title: "Hypoallergenic", description: "Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi." },
+        { icon: "🧼", title: "Washable & Quick-dry", description: "Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali." },
+        { icon: "🇮🇩", title: "100% Produk Lokal", description: "Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia." }
+      ],
+      soldCount: 520,
+      testimonials: [
+        {
+          name: 'Ratih Ningsih',
+          rating: 5,
+          message: 'Bulunya halus banget rasfur premium, jahitannya sangat rapi dan tebal. Isian dacronnya padat tapi tetap empuk banget dipeluk. Sangat rekomended buat anak-anak!',
+          date: '12 Mei 2026',
+          avatar: 'RN'
+        },
+        {
+          name: 'Budi Santoso',
+          rating: 5,
+          message: 'Beli untuk kado wisuda pacar, respon admin cepat dan dapet selempang kustom nama wisuda gratis. Packingnya rapi menggunakan box cantik dan pita pink manis.',
+          date: '04 Mei 2026',
+          avatar: 'BS'
+        }
+      ]
     },
-    variants: [
-      { size: "Medium (40cm)", price: 89000, shopeePrice: 94000, tokopediaPrice: 89000, lazadaPrice: 89000, tiktokPrice: 91000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" },
-      { size: "Jumbo (100cm)", price: 189000, shopeePrice: 199000, tokopediaPrice: 189000, lazadaPrice: 189000, tiktokPrice: 194000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '2',
@@ -102,23 +128,27 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 96,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 99000,
-    tokopediaPrice: 95000,
-    lazadaPrice: 95000,
-    tiktokPrice: 97000,
     specifications: {
       material: '100% Premium Dacron & Kain Velboa Super Lembut',
       size: 'Tinggi 40 cm (ujung telinga ke kaki), Lebar 20 cm',
       washing: 'Cuci tangan dengan air hangat hangat kuku dan sabun bayi',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Pink Pastel", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Medium (35cm)", extraPrice: 0 },
+        { name: "Jumbo (80cm)", extraPrice: 104000 }
+      ],
+      features: [
+        { icon: "🪡", title: "Jahitan Super Kuat", description: "Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi." },
+        { icon: "🛡️", title: "Hypoallergenic", description: "Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi." },
+        { icon: "🧼", title: "Washable & Quick-dry", description: "Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali." },
+        { icon: "🇮🇩", title: "100% Produk Lokal", description: "Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia." }
+      ]
     },
-    variants: [
-      { size: "Medium (35cm)", price: 95000, shopeePrice: 99000, tokopediaPrice: 95000, lazadaPrice: 95000, tiktokPrice: 97000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" },
-      { size: "Jumbo (80cm)", price: 199000, shopeePrice: 209000, tokopediaPrice: 199000, lazadaPrice: 199000, tiktokPrice: 204000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '3',
@@ -131,23 +161,27 @@ export const PRODUCTS: Product[] = [
     rating: 5.0,
     reviewsCount: 64,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 115000,
-    tokopediaPrice: 110000,
-    lazadaPrice: 110000,
-    tiktokPrice: 112000,
     specifications: {
       material: '100% Premium Dacron Grade A & Kain Spandex Lembut elastis',
       size: 'Panjang 38 cm, Tinggi 22 cm',
       washing: 'Cukup diusap dengan kain basah hangat atau cuci tangan lembut',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Hijau Cerah", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Medium (38cm)", extraPrice: 0 },
+        { name: "Jumbo (80cm)", extraPrice: 100000 }
+      ],
+      features: [
+        { icon: "🪡", title: "Jahitan Super Kuat", description: "Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi." },
+        { icon: "🛡️", title: "Hypoallergenic", description: "Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi." },
+        { icon: "🧼", title: "Washable & Quick-dry", description: "Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali." },
+        { icon: "🇮🇩", title: "100% Produk Lokal", description: "Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia." }
+      ]
     },
-    variants: [
-      { size: "Medium (38cm)", price: 110000, shopeePrice: 115000, tokopediaPrice: 110000, lazadaPrice: 110000, tiktokPrice: 112000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" },
-      { size: "Jumbo (80cm)", price: 210000, shopeePrice: 220000, tokopediaPrice: 210000, lazadaPrice: 210000, tiktokPrice: 215000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '4',
@@ -160,23 +194,27 @@ export const PRODUCTS: Product[] = [
     rating: 4.7,
     reviewsCount: 81,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 84000,
-    tokopediaPrice: 79000,
-    lazadaPrice: 79000,
-    tiktokPrice: 81000,
     specifications: {
       material: 'Isian Microfiber Bulu Angsa Sintetis & Kain Spandex Elastis premium',
       size: 'Diameter 30 cm',
       washing: 'Bisa dicuci mesin cuci dengan laundry bag putaran rendah',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Putih", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Squishy (30cm)", extraPrice: 0 },
+        { name: "Super Jumbo (60cm)", extraPrice: 80000 }
+      ],
+      features: [
+        { icon: "🪡", title: "Jahitan Super Kuat", description: "Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi." },
+        { icon: "🛡️", title: "Hypoallergenic", description: "Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi." },
+        { icon: "🧼", title: "Washable & Quick-dry", description: "Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali." },
+        { icon: "🇮🇩", title: "100% Produk Lokal", description: "Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia." }
+      ]
     },
-    variants: [
-      { size: "Squishy (30cm)", price: 79000, shopeePrice: 84000, tokopediaPrice: 79000, lazadaPrice: 79000, tiktokPrice: 81000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" },
-      { size: "Super Jumbo (60cm)", price: 159000, shopeePrice: 169000, tokopediaPrice: 159000, lazadaPrice: 159000, tiktokPrice: 164000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '5',
@@ -189,23 +227,28 @@ export const PRODUCTS: Product[] = [
     rating: 4.9,
     reviewsCount: 52,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 135000,
-    tokopediaPrice: 125000,
-    lazadaPrice: 125000,
-    tiktokPrice: 129000,
     specifications: {
       material: '100% Premium Dacron & Bulu Snail Mawar Bertekstur Indah',
       size: 'Tinggi 35 cm (posisi duduk)',
       washing: 'Dicuci kering (dry clean) disarankan, toga dapat dilepas',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Kado Wisuda Biasa", extraPrice: 0 },
+        { name: "Kustom Nama (+Selempang)", extraPrice: 15000 }
+      ],
+      sizes: [
+        { name: "Medium (35cm)", extraPrice: 0 },
+        { name: "Jumbo (70cm)", extraPrice: 124000 }
+      ],
+      features: [
+        { icon: "🪡", title: "Jahitan Super Kuat", description: "Metode double stitch pengerjaan manual oleh pengrajin lokal berlisensi." },
+        { icon: "🛡️", title: "Hypoallergenic", description: "Bulu halus tidak mudah rontok, debu tidak mengendap. Aman bagi alergi." },
+        { icon: "🧼", title: "Washable & Quick-dry", description: "Silikon dakron grade A tidak mudah menggumpal meskipun dicuci mesin berkali-kali." },
+        { icon: "🇮🇩", title: "100% Produk Lokal", description: "Mendukung peningkatan ekonomi pengrajin boneka lokal Indonesia." }
+      ]
     },
-    variants: [
-      { size: "Medium (35cm)", price: 125000, shopeePrice: 135000, tokopediaPrice: 125000, lazadaPrice: 125000, tiktokPrice: 129000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" },
-      { size: "Jumbo (70cm)", price: 249000, shopeePrice: 259000, tokopediaPrice: 249000, lazadaPrice: 249000, tiktokPrice: 254000, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '6',
@@ -218,22 +261,21 @@ export const PRODUCTS: Product[] = [
     rating: 4.9,
     reviewsCount: 215,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 34900,
-    tokopediaPrice: 29000,
-    lazadaPrice: 29000,
-    tiktokPrice: 31900,
     specifications: {
       material: 'Dacron Premium Silikon & Bulu Rasfur Halus',
       size: 'Tinggi 12 cm',
       washing: 'Cuci tangan secara perlahan menggunakan sikat gigi lembut',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Cokelat", extraPrice: 0 },
+        { name: "Krem", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Mini (12cm)", extraPrice: 0 }
+      ]
     },
-    variants: [
-      { size: "Mini (12cm)", price: 29000, shopeePrice: 34900, tokopediaPrice: 29000, lazadaPrice: 29000, tiktokPrice: 31900, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   },
   {
     id: '7',
@@ -246,21 +288,27 @@ export const PRODUCTS: Product[] = [
     rating: 4.7,
     reviewsCount: 38,
     shopeeLink: 'https://shopee.co.id',
-    tokopediaLink: 'https://tokopedia.com',
-    lazadaLink: 'https://lazada.co.id',
-    tiktokLink: 'https://tiktok.com',
     shopeePrice: 34900,
-    tokopediaPrice: 29000,
-    lazadaPrice: 29000,
-    tiktokPrice: 31900,
     specifications: {
       material: 'Dacron Premium Silikon & Bulu Yelvo Halus',
       size: 'Tinggi 12 cm',
       washing: 'Cuci tangan perlahan dengan air sabun ringan',
-      safeForKids: true
+      safeForKids: true,
+      types: [
+        { name: "Pink Telinga", extraPrice: 0 }
+      ],
+      sizes: [
+        { name: "Mini (12cm)", extraPrice: 0 }
+      ]
     },
-    variants: [
-      { size: "Mini (12cm)", price: 29000, shopeePrice: 34900, tokopediaPrice: 29000, lazadaPrice: 29000, tiktokPrice: 31900, shopeeUrl: "https://shopee.co.id", tokopediaUrl: "https://tokopedia.com", lazadaUrl: "https://lazada.co.id", tiktokUrl: "https://tiktok.com" }
-    ]
+    variants: []
   }
 ];
+
+export interface CartItem extends Product {
+  cartItemId: string;
+  selectedVariantType?: string;
+  selectedVariantSize?: string;
+  quantity: number;
+  selectedPrice: number;
+}
