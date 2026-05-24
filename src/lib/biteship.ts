@@ -14,6 +14,7 @@ export interface CourierResult {
   code: string;
   name: string;
   costs: ShippingCostOption[];
+  isMock?: boolean;
 }
 
 const BITESHIP_API_KEY = process.env.BITESHIP_API_KEY || '';
@@ -64,7 +65,7 @@ export async function calculateCost(
 ): Promise<CourierResult[]> {
   if (!BITESHIP_API_KEY || !originId || !destinationId) {
     console.warn('API Key or Location IDs are missing. Returning mock shipping costs.');
-    return generateMockCosts();
+    return generateMockCosts(true);
   }
 
   try {
@@ -84,6 +85,9 @@ export async function calculateCost(
             description: "Boneka",
             value: 100000,
             weight: weight,
+            length: 15,
+            width: 15,
+            height: 15,
             quantity: 1
           }
         ]
@@ -91,7 +95,21 @@ export async function calculateCost(
     });
 
     if (!res.ok) {
-      throw new Error(`Biteship API responded with status ${res.status}`);
+      const errorText = await res.text();
+      let errorMsg = errorText;
+      try {
+        const jsonErr = JSON.parse(errorText);
+        errorMsg = jsonErr.error || errorText;
+      } catch (e) {}
+
+      if (errorMsg.toLowerCase().includes('sufficient balance') || errorMsg.toLowerCase().includes('balance')) {
+        console.warn(`\n⚠️  [Biteship API Warning]: Insufficient balance on your Biteship live account.`);
+        console.warn(`👉 System is using simulated fallback rates (JNE, SiCepat, J&T) so checkout is completely UNBLOCKED.\n`);
+      } else {
+        console.warn(`\n❌ [Biteship API Error]:`, errorMsg);
+        console.warn(`👉 System is using simulated fallback rates.\n`);
+      }
+      return generateMockCosts(true);
     }
 
     const json = await res.json();
@@ -127,9 +145,10 @@ export async function calculateCost(
     }
 
     return Array.from(couriersMap.values());
-  } catch (error) {
-    console.error(`Error calculating cost from Biteship:`, error);
-    return generateMockCosts();
+  } catch (error: any) {
+    console.warn(`\n❌ [Biteship Error]:`, error.message || error);
+    console.warn(`👉 System is using simulated fallback rates.\n`);
+    return generateMockCosts(true);
   }
 }
 
@@ -140,11 +159,12 @@ function generateMockAreas(keyword: string): BiteshipDestination[] {
   ];
 }
 
-function generateMockCosts(): CourierResult[] {
+function generateMockCosts(isMock: boolean = true): CourierResult[] {
   return [
     {
       code: 'jne',
       name: 'JNE',
+      isMock,
       costs: [
         { service: 'REG', description: 'Layanan Reguler JNE', cost: 15000, etd: '2-3 Hari' },
         { service: 'YES', description: 'Yakin Esok Sampai', cost: 25000, etd: '1 Hari' }
@@ -153,6 +173,7 @@ function generateMockCosts(): CourierResult[] {
     {
       code: 'sicepat',
       name: 'SiCepat Ekspres',
+      isMock,
       costs: [
         { service: 'REG', description: 'SiCepat Reguler', cost: 14000, etd: '1-2 Hari' },
         { service: 'BEST', description: 'Besok Sampai Tujuan', cost: 24000, etd: '1 Hari' }
@@ -161,6 +182,7 @@ function generateMockCosts(): CourierResult[] {
     {
       code: 'jnt',
       name: 'J&T Express',
+      isMock,
       costs: [
         { service: 'EZ', description: 'Layanan Reguler', cost: 16000, etd: '2-3 Hari' }
       ]

@@ -57,6 +57,7 @@ function CheckoutContent() {
   const [shippingCosts, setShippingCosts] = useState<any[]>([]);
   const [isLoadingCosts, setIsLoadingCosts] = useState(false);
   const [selectedShippingOption, setSelectedShippingOption] = useState<any | null>(null);
+  const [isUsingMockShipping, setIsUsingMockShipping] = useState(false);
   
   // Checkout states
   const [paymentMethod, setPaymentMethod] = useState<'qris' | 'va'>('qris');
@@ -198,12 +199,14 @@ function CheckoutContent() {
     if (!selectedDestination) {
       setShippingCosts([]);
       setSelectedShippingOption(null);
+      setIsUsingMockShipping(false);
       return;
     }
 
     const fetchCosts = async () => {
       setIsLoadingCosts(true);
       setSelectedShippingOption(null);
+      setIsUsingMockShipping(false);
       const totalWeight = calculateWeightGrams();
 
       try {
@@ -220,6 +223,9 @@ function CheckoutContent() {
         const options: any[] = [];
         
         if (json.status === 'success' && Array.isArray(json.data)) {
+          const hasMock = json.data.some((courier: any) => courier.isMock);
+          setIsUsingMockShipping(hasMock);
+
           json.data.forEach((courier: any) => {
             courier.costs.forEach((service: any) => {
               options.push({
@@ -229,7 +235,8 @@ function CheckoutContent() {
                 description: service.description,
                 cost: service.cost,
                 etd: service.etd,
-                id: `${courier.code}-${service.service}`
+                id: `${courier.code}-${service.service}`,
+                isMock: courier.isMock
               });
             });
           });
@@ -243,9 +250,11 @@ function CheckoutContent() {
           }
         } else {
            setShippingCosts([]);
+           setIsUsingMockShipping(false);
         }
       } catch (e) {
         console.error('Failed to calculate shipping fees:', e);
+        setIsUsingMockShipping(false);
       } finally {
         setIsLoadingCosts(false);
       }
@@ -270,7 +279,14 @@ function CheckoutContent() {
 
   const productPrice = getProductPrice();
   const subtotal = productPrice * quantity;
-  const shippingFee = selectedShippingOption ? selectedShippingOption.cost : 0;
+  
+  const isJavaOrBali = selectedDestination?.label?.match(/jawa|bali|banten|jakarta|yogyakarta/i);
+  const isFreeShippingEligible = subtotal >= 400000 && isJavaOrBali;
+  
+  const rawShippingFee = selectedShippingOption ? selectedShippingOption.cost : 0;
+  const shippingDiscount = (isFreeShippingEligible && rawShippingFee > 0) ? rawShippingFee : 0;
+  const shippingFee = rawShippingFee - shippingDiscount;
+
   const grandTotal = subtotal + shippingFee;
 
   const formatIDR = (num: number) => {
@@ -307,6 +323,7 @@ function CheckoutContent() {
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+      const sessionId = localStorage.getItem('simoengil_chat_session');
 
       const orderPayload = {
         items: [
@@ -333,7 +350,8 @@ function CheckoutContent() {
           service: selectedShippingOption.service,
           cost: shippingFee
         },
-        totalPrice: grandTotal
+        totalPrice: grandTotal,
+        sessionId: sessionId
       };
 
       const res = await fetch('/api/checkout', {
@@ -357,6 +375,7 @@ function CheckoutContent() {
       // Check if it is a simulated checkout (when Midtrans credentials are not configure/empty)
       if (json.data.isSimulation) {
         setPlacedOrderId(orderId);
+        if (orderId) localStorage.setItem('simoengil_chat_session', orderId);
         setPlacedOrderInfo({
           ...orderPayload,
           orderId: orderId,
@@ -378,6 +397,7 @@ function CheckoutContent() {
         (window as any).snap.pay(snapToken, {
           onSuccess: function(result: any) {
             setPlacedOrderId(orderId);
+            if (orderId) localStorage.setItem('simoengil_chat_session', orderId);
             setPlacedOrderInfo({
               ...orderPayload,
               orderId: orderId,
@@ -393,6 +413,7 @@ function CheckoutContent() {
           },
           onPending: function(result: any) {
             setPlacedOrderId(orderId);
+            if (orderId) localStorage.setItem('simoengil_chat_session', orderId);
             setPlacedOrderInfo({
               ...orderPayload,
               orderId: orderId,
@@ -687,6 +708,24 @@ function CheckoutContent() {
               <h2 className="text-lg font-black text-slate-800 font-heading">Opsi Pengiriman (Biteship)</h2>
             </div>
 
+            {isUsingMockShipping && (
+              <div className="bg-[#FFF8F3] border border-[#E8B37D]/35 rounded-2xl p-4 flex gap-3 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-300">
+                <AlertCircle className="w-5 h-5 text-[#E8B37D] shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs">
+                  <span className="font-extrabold text-[#E8B37D] block">Catatan Penting (Mode Simulasi)</span>
+                  <p className="leading-relaxed font-semibold text-slate-600">
+                    Biteship API Key Anda saat ini tidak memiliki saldo yang cukup (balance 0) untuk memanggil API rates secara live.
+                  </p>
+                  <p className="leading-relaxed text-slate-500 font-medium">
+                    Sistem secara otomatis mengaktifkan <strong>tarif simulasi (JNE, SiCepat, J&T)</strong> agar transaksi di toko Anda tetap berjalan dengan lancar tanpa hambatan!
+                  </p>
+                  <p className="text-[10px] text-[#E8B37D] font-extrabold pt-1">
+                    👉 Silakan lakukan top up saldo di dashboard Biteship Anda untuk mengaktifkan tarif asli secara otomatis.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {!selectedDestination ? (
               <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100 text-xs sm:text-sm text-slate-400 font-medium">
                 Pilih Kecamatan/Kota terlebih dahulu untuk menghitung ongkos kirim.
@@ -704,8 +743,11 @@ function CheckoutContent() {
               <div className="space-y-3">
                 <p className="text-[10px] font-black text-[#E8B37D] uppercase tracking-widest mb-1.5 block">Opsi Kurir Tersedia:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {shippingCosts.map((option) => {
+                  {shippingCosts.map((option, index) => {
                     const isSelected = selectedShippingOption?.id === option.id;
+                    const isCheapest = index === 0;
+                    const isFastest = option.etd.includes('1') && !option.etd.includes('10');
+
                     return (
                       <label
                         key={option.id}
@@ -724,9 +766,21 @@ function CheckoutContent() {
                             onChange={() => setSelectedShippingOption(option)}
                           />
                           <div className="min-w-0">
-                            <span className="text-[10px] font-black bg-pink-100 text-[#FF8FB1] px-2 py-0.5 rounded border border-[#FFB6C8]/40 uppercase tracking-wide block w-max mb-1">
-                              {option.courierCode.toUpperCase()}
-                            </span>
+                            <div className="flex flex-wrap gap-1 mb-1">
+                              <span className="text-[10px] font-black bg-pink-100 text-[#FF8FB1] px-2 py-0.5 rounded border border-[#FFB6C8]/40 uppercase tracking-wide">
+                                {option.courierCode.toUpperCase()}
+                              </span>
+                              {isCheapest && (
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wide">
+                                  Paling Hemat
+                                </span>
+                              )}
+                              {isFastest && !isCheapest && (
+                                <span className="text-[10px] font-black bg-amber-100 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wide">
+                                  Paling Cepat
+                                </span>
+                              )}
+                            </div>
                             <span className="text-xs font-black text-slate-800 block">
                               {option.service}
                             </span>
@@ -864,17 +918,39 @@ function CheckoutContent() {
                 <span>Subtotal Produk:</span>
                 <span className="font-bold text-slate-800">{formatIDR(subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Biaya Pengiriman:</span>
-                <span className="font-bold text-slate-800">
-                  {selectedShippingOption ? formatIDR(shippingFee) : 'Pilih Kurir'}
-                </span>
+              <div className="flex justify-between items-center">
+                <span>Estimasi Biaya Pengiriman:</span>
+                {selectedShippingOption ? (
+                  <div className="text-right flex flex-col items-end gap-1">
+                    {shippingDiscount > 0 ? (
+                      <>
+                        <span className="line-through text-slate-400 text-[10px]">{formatIDR(rawShippingFee)}</span>
+                        <span className="font-bold text-emerald-500">Gratis!</span>
+                      </>
+                    ) : (
+                      <span className="font-bold text-slate-800">{formatIDR(shippingFee)}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="font-bold text-slate-800">Pilih Kurir</span>
+                )}
               </div>
               
               <div className="pt-4 border-t border-pink-100/20 flex justify-between items-center text-sm font-extrabold text-slate-800">
                 <span>Total Bayar:</span>
                 <span className="text-lg text-[#FF8FB1]">{formatIDR(grandTotal)}</span>
               </div>
+            </div>
+            
+            <div className="bg-[#FFF8F3] border border-pink-100/40 p-4 rounded-xl space-y-2 mt-4 text-[10px] text-slate-500 font-medium leading-relaxed">
+              <p className="flex items-start gap-2">
+                <Info className="w-3.5 h-3.5 text-[#E8B37D] shrink-0 mt-0.5" />
+                <span>Ongkir yang tertera adalah <strong>estimasi terbaik</strong> (sudah termasuk margin packing aman bubble wrap tebal).</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                <span>Ongkir final akan disesuaikan setelah kami cek berat paket riil. Kami akan konfirmasi ongkir final via WhatsApp maksimal 1x24 jam setelah order jika ada penyesuaian.</span>
+              </p>
             </div>
 
             {/* Checkout Action Button */}
@@ -898,6 +974,10 @@ function CheckoutContent() {
 
             {/* Trust Badges */}
             <div className="pt-2 flex flex-col gap-2.5 text-[10px] font-semibold text-slate-400 bg-[#FFF5F0]/40 p-4 rounded-2xl border border-pink-100/10">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#FF8FB1] shrink-0" />
+                <span className="text-slate-600 font-bold">Gratis Ongkir untuk pembelian di atas Rp400.000 (Khusus Jawa & Bali)</span>
+              </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>Transaksi Terenkripsi Aman & Didukung oleh Midtrans</span>

@@ -86,6 +86,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 4.5. Link Chat Session if provided
+    const { sessionId } = body;
+    if (sessionId) {
+      await supabaseAdmin
+        .from('messages')
+        .update({ product_id: order.id })
+        .eq('product_id', sessionId);
+    }
+
     // 5. Initialize Midtrans Snap SDK
     const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
     const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;

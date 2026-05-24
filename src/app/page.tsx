@@ -22,6 +22,9 @@ import { ProductCard } from '@/components/ProductCard';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { WishlistDrawer } from '@/components/WishlistDrawer';
 import { GSAPInitializer } from '@/components/GSAPInitializer';
+import { ChatWidget } from '@/components/ChatWidget';
+import { OrderTrackingModal } from '@/components/OrderTrackingModal';
+import AuthModal from '@/components/AuthModal';
 import { supabase } from '@/lib/supabase';
 import confetti from 'canvas-confetti';
 import * as LucideIcons from 'lucide-react';
@@ -66,6 +69,9 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
+  const [isTrackingOpen, setIsTrackingOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<string>('terbaru');
   const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
@@ -180,14 +186,34 @@ export default function Home() {
       }
     };
 
-    const checkAdminSession = async () => {
+    const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setIsAdmin(!!session);
+        if (session) {
+          setUser(session.user);
+          // Only redirect to admin panel if the email matches an admin email or a specific logic
+          if (session.user.email === 'admin@simoengil.com') {
+            setIsAdmin(true);
+          }
+        }
       } catch (err) {
-        console.warn('Could not retrieve auth session:', err);
+        console.warn('Auth check skipped');
       }
     };
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser(session.user);
+        if (session.user.email === 'admin@simoengil.com') {
+          setIsAdmin(true);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
 
     const fetchSettings = async () => {
       try {
@@ -219,7 +245,6 @@ export default function Home() {
     };
 
     fetchProducts();
-    checkAdminSession();
     fetchSettings();
 
     // Listen for auth state changes
@@ -386,12 +411,20 @@ export default function Home() {
             <a href="#" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Beranda</a>
             <a href="#katalog" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Katalog</a>
             <a href="#tentang" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Tentang Kami</a>
-            <a href="#bts" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Behind The Scenes</a>
             <a href="#faq" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">FAQ</a>
           </nav>
 
-          {/* Right Header WhatsApp CTA */}
-          <div className="flex items-center gap-4">
+          {/* Right Header CTA */}
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1">
+            {/* Track Order Button */}
+            <button
+              onClick={() => setIsTrackingOpen(true)}
+              className="text-xs font-bold text-[#FFB6C8] hover:text-white border border-[#FFB6C8]/30 hover:bg-[#FFB6C8]/20 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5" />
+              Lacak
+            </button>
+
             {/* Wishlist Button in Header */}
             <button
               onClick={() => setIsWishlistOpen(true)}
@@ -414,11 +447,30 @@ export default function Home() {
               className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
             >
               <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Hubungi WhatsApp</span>
-              <span className="sm:hidden">WhatsApp</span>
-            </a>
-          </div>
-        </div>
+                <span className="hidden sm:inline">Hubungi WhatsApp</span>
+                <span className="sm:hidden">WhatsApp</span>
+              </a>
+              {/* User Auth / Dashboard Button */}
+              {user ? (
+                <div className="hidden md:flex items-center gap-3 ml-auto">
+                  <Link href="/dashboard" className="text-xs font-bold text-white hover:text-[#FFB6C8] transition-colors flex items-center gap-1.5">
+                    <LucideIcons.User className="w-3.5 h-3.5" />
+                    Dashboard Saya
+                  </Link>
+                  <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-bold text-white/50 hover:text-white transition-colors">
+                    Keluar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="text-xs font-bold text-white hover:text-[#FFB6C8] border border-transparent hover:border-[#FFB6C8]/30 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer ml-auto"
+                >
+                  <LucideIcons.User className="w-3.5 h-3.5" />
+                  Daftar / Masuk
+                </button>
+              )}
+            </div>
 
         {/* Mobile Navigation Links Row */}
         <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
@@ -427,8 +479,15 @@ export default function Home() {
           <a href="#tentang" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Tentang Kami</a>
           <a href="#bts" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Proses</a>
           <a href="#faq" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">FAQ</a>
+          <button onClick={() => setIsTrackingOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Lacak</button>
+          {!user ? (
+            <button onClick={() => setIsAuthModalOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Masuk/Daftar</button>
+          ) : (
+            <Link href="/dashboard" className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Dashboard</Link>
+          )}
         </div>
-      </header>
+      </div>
+</header>
 
       {/* HERO SECTION */}
       <section className="relative z-10 pt-8 pb-16 md:pt-12 md:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-10 md:gap-16 lg:gap-24 animate-in fade-in duration-700">
@@ -1110,6 +1169,14 @@ export default function Home() {
       {/* WISHLIST DRAWER */}
       <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} cartItems={cart} onRemoveItem={handleRemoveCartItem} onUpdateQuantity={handleUpdateCartQuantity} onDetailClick={handleProductDetailClick} />
       
+      {/* LIVE CHAT */}
+      <ChatWidget />
+
+      {/* TRACKING MODAL */}
+      <OrderTrackingModal isOpen={isTrackingOpen} onClose={() => setIsTrackingOpen(false)} />
+
+      {/* AUTH MODAL */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 }

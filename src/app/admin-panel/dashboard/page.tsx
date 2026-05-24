@@ -1,4 +1,5 @@
 'use client';
+import { MessageSquare } from 'lucide-react';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,11 +25,110 @@ import {
   X
 } from 'lucide-react';
 
+const getShippingDetails = (shippingAddress: any) => {
+  if (!shippingAddress) return { name: 'Pelanggan', phone: '-', addressStr: '-' };
+  let addr = shippingAddress;
+  if (typeof addr === 'string') {
+    try {
+      addr = JSON.parse(addr);
+      if (typeof addr === 'string') {
+        addr = JSON.parse(addr);
+      }
+    } catch (e) {
+      return { name: 'Pelanggan', phone: '-', addressStr: String(shippingAddress) };
+    }
+  }
+  
+  if (typeof addr === 'object' && addr !== null) {
+    const name = addr.name || addr.customer_name || 'Pelanggan';
+    const phone = addr.phone || addr.customer_phone || '-';
+    const detail = addr.detailAddress || addr.address || '';
+    const city = addr.city || '';
+    const prov = addr.province || '';
+    const zip = addr.postalCode || addr.postal_code || '';
+    const addressStr = [detail, city, prov, zip].filter(Boolean).join(', ') || '-';
+    return { name, phone, addressStr };
+  }
+  
+  return { name: 'Pelanggan', phone: '-', addressStr: String(shippingAddress) };
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isFetching, setIsFetching] = useState(true);
+
+  // Order management states
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isFetchingOrders, setIsFetchingOrders] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [orderMessages, setOrderMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+
+  // Helper: fetch orders from Supabase
+  const fetchOrders = async () => {
+    setIsFetchingOrders(true);
+    try {
+      const { data, error } = await supabase.from('orders').select('*');
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.warn('Failed to fetch orders', err);
+    } finally {
+      setIsFetchingOrders(false);
+    }
+  };
+
+  // Helper: fetch messages for a specific order (or product)
+  const fetchMessages = async (orderId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('product_id', orderId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setOrderMessages(data || []);
+    } catch (err) {
+      console.warn('Failed to fetch messages', err);
+    }
+  };
+
+  // Helper: send a new message (admin side)
+  const sendMessage = async (orderId: string) => {
+    if (!newMessage.trim()) return;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_role: 'ADMIN',
+          content: newMessage.trim(),
+          product_id: orderId
+        })
+      });
+      if (!res.ok) throw new Error('Failed to send message');
+      setNewMessage('');
+      await fetchMessages(orderId);
+    } catch (err) {
+      console.warn('Failed to send message', err);
+    }
+  };
+
+  // Helper: update order status and tracking number
+  const updateOrder = async (orderId: string, status: string, trackingNumber?: string) => {
+    try {
+      const updates: any = { status };
+      if (trackingNumber !== undefined) updates.tracking_number = trackingNumber;
+      const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
+      if (error) throw error;
+      await fetchOrders();
+    } catch (err) {
+      console.warn('Failed to update order', err);
+    }
+  };
+
 
   // Form States
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,11 +159,18 @@ export default function AdminDashboardPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
   // Tab State
-  const [activeTab, setActiveTab] = useState<'katalog' | 'halaman'>('katalog');
+  const [activeTab, setActiveTab] = useState<'katalog' | 'halaman' | 'pesanan'>('katalog');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Site Settings States
   const [siteSettings, setSiteSettings] = useState<any>({});
+  
+  // Effect: load orders when admin switches to "pesanan" tab
+  useEffect(() => {
+    if (activeTab === 'pesanan') {
+      fetchOrders();
+    }
+  }, [activeTab]);
   const [heroTitle, setHeroTitle] = useState('');
   const [heroDescription, setHeroDescription] = useState('');
   const [heroImage1, setHeroImage1] = useState('');
@@ -662,6 +769,17 @@ export default function AdminDashboardPage() {
               <span>Kelola Katalog</span>
             </button>
             <button
+              onClick={() => setActiveTab('pesanan')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-extrabold transition-colors border cursor-pointer ${
+                activeTab === 'pesanan' 
+                  ? 'bg-pink-50 text-pink-600 border-pink-100/50' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-transparent'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Kelola Pesanan</span>
+            </button>
+            <button
               onClick={() => setActiveTab('halaman')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-extrabold transition-colors border cursor-pointer ${
                 activeTab === 'halaman' 
@@ -704,11 +822,13 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight">
-              {activeTab === 'katalog' ? 'Kelola Katalog Boneka' : 'Pengaturan Halaman (CMS)'}
+              {activeTab === 'katalog' ? 'Kelola Katalog Boneka' : activeTab === 'pesanan' ? 'Kelola Pesanan Masuk' : 'Pengaturan Halaman (CMS)'}
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium mt-1">
               {activeTab === 'katalog' 
                 ? 'Tambah, ubah, atau hapus daftar boneka dan kelola varian harga e-commerce.'
+                : activeTab === 'pesanan'
+                ? 'Pantau pesanan masuk dan update status pengiriman.'
                 : 'Ubah teks dan ikon yang muncul di halaman utama website.'}
             </p>
           </div>
@@ -1521,6 +1641,176 @@ export default function AdminDashboardPage() {
           </section>
 
         </div>
+        ) : activeTab === 'pesanan' ? (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <section className="xl:col-span-7 space-y-6">
+              <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <h3 className="font-extrabold text-sm text-slate-700 flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-slate-500" />
+                    Daftar Pesanan ({orders.length})
+                  </h3>
+                  {isFetchingOrders && (
+                    <span className="text-[10px] text-slate-400 font-semibold animate-pulse">Memuat...</span>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/30">
+                        <th className="py-4 px-5">ID Pesanan / Pembeli</th>
+                        <th className="py-4 px-5">Total Harga</th>
+                        <th className="py-4 px-5">Status</th>
+                        <th className="py-4 px-5">Resi</th>
+                        <th className="py-4 px-5 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {orders.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
+                            Belum ada pesanan masuk.
+                          </td>
+                        </tr>
+                      ) : (
+                        orders.map((o) => (
+                          <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-4 px-5">
+                              <span className="font-bold text-slate-800 block truncate w-32" title={o.id}>{o.id.split('-')[0].toUpperCase()}</span>
+                              <span className="text-[10px] font-semibold text-slate-400">{getShippingDetails(o.shipping_address).name}</span>
+                            </td>
+                            <td className="py-4 px-5 font-extrabold text-slate-700">
+                              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(o.total_price || o.total_amount || 0)}
+                            </td>
+                            <td className="py-4 px-5">
+                              <select 
+                                value={o.status || 'PENDING'} 
+                                onChange={(e) => updateOrder(o.id, e.target.value, o.tracking_number)}
+                                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold focus:border-pink-400"
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="SHIPPED">SHIPPED</option>
+                                <option value="DELIVERED">DELIVERED</option>
+                                <option value="CANCELED">CANCELED</option>
+                              </select>
+                            </td>
+                            <td className="py-4 px-5">
+                              <input 
+                                type="text"
+                                placeholder="Input resi..."
+                                defaultValue={o.tracking_number || ''}
+                                onBlur={(e) => {
+                                  if (e.target.value !== o.tracking_number) {
+                                    updateOrder(o.id, o.status, e.target.value);
+                                  }
+                                }}
+                                className="w-24 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] focus:border-pink-400"
+                              />
+                            </td>
+                            <td className="py-4 px-5 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedOrder(o);
+                                  fetchMessages(o.id);
+                                }}
+                                className="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                              >
+                                Detail & Chat
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+            
+            {/* Detail & Chat (Span 5) */}
+            <section className="xl:col-span-5">
+              {selectedOrder ? (
+                <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm p-6 space-y-6 flex flex-col h-[600px]">
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-800">Detail Pesanan</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">ID: {selectedOrder.id}</p>
+                    </div>
+                    <button onClick={() => setSelectedOrder(null)} className="p-1 hover:bg-slate-100 rounded-md cursor-pointer">
+                      <X className="w-4 h-4 text-slate-400" />
+                    </button>
+                  </div>
+                  
+                  {/* Order Info */}
+                  <div className="space-y-3 shrink-0">
+                    <div className="text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <p><strong>Nama:</strong> {getShippingDetails(selectedOrder.shipping_address).name}</p>
+                      <p><strong>Kontak:</strong> {getShippingDetails(selectedOrder.shipping_address).phone}</p>
+                      <p><strong>Alamat:</strong> {getShippingDetails(selectedOrder.shipping_address).addressStr}</p>
+                      {(selectedOrder.items || selectedOrder.cart_items) && (
+                        <div className="mt-2 pt-2 border-t border-slate-200">
+                          <p className="font-bold mb-1">Items:</p>
+                          <ul className="list-disc list-inside text-[10px]">
+                            {(selectedOrder.items || selectedOrder.cart_items).map((item: any, i: number) => (
+                              <li key={i}>{item.name} x{item.quantity}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chat Section */}
+                  <div className="flex-1 flex flex-col min-h-0 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                    <div className="p-3 bg-pink-50 border-b border-pink-100 text-[10px] font-bold text-pink-600 flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Live Chat dengan Pembeli
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+                      {orderMessages.length === 0 ? (
+                        <p className="text-center text-[10px] text-slate-400 italic m-auto">Belum ada percakapan.</p>
+                      ) : (
+                        orderMessages.map((msg, idx) => (
+                          <div key={idx} className={`flex flex-col ${msg.sender_role === 'ADMIN' ? 'items-end' : 'items-start'}`}>
+                            <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${msg.sender_role === 'ADMIN' ? 'bg-pink-500 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'}`}>
+                              {msg.content}
+                            </div>
+                            <span className="text-[8px] text-slate-400 mt-1">
+                              {new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                      <input 
+                        type="text" 
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Balas pembeli..."
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage(selectedOrder.id)}
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:border-pink-400 focus:outline-none"
+                      />
+                      <button 
+                        onClick={() => sendMessage(selectedOrder.id)}
+                        className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                      >
+                        Kirim
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm h-[600px] flex items-center justify-center flex-col text-slate-400">
+                  <MessageSquare className="w-12 h-12 mb-3 text-slate-200" />
+                  <p className="text-xs font-medium">Pilih pesanan untuk melihat detail dan chat</p>
+                </div>
+              )}
+            </section>
+          </div>
         ) : (
           <div className="max-w-3xl space-y-8">
             <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">

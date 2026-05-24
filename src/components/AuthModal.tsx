@@ -264,43 +264,7 @@ export default function AuthModal({
             </button>
           </form>
 
-          {/* OAuth Divider */}
-          <div className="relative flex items-center justify-center my-5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100"></div>
-            </div>
-            <span className="relative px-3 text-[9px] font-black text-slate-400 bg-white uppercase tracking-widest">
-              Atau masuk dengan
-            </span>
-          </div>
-
-          {/* Google Login Button */}
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className="w-full py-2.5 border border-slate-200 hover:border-pink-300 hover:bg-pink-50/20 rounded-2xl text-xs sm:text-sm font-bold text-slate-700 transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path
-                fill="#EA4335"
-                d="M5.2662 9.7651c-.2611-.7841-.4091-1.6231-.4091-2.5021 0-.879.148-1.718.4091-2.502L1.3142 1.63C.4741 3.298 0 5.173 0 7.163c0 2.09.52 4.053 1.433 5.787l3.8332-3.1849z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M16.04 15.345c-2.451 1.564-5.502 2.088-8.74 1.484-1.242-.232-2.399-.747-3.414-1.488L1.3142 18.526c2.09 1.517 4.674 2.4 7.4588 2.4 4.053 0 7.649-1.892 9.947-4.831l-2.68-2.09-.0002-.135z"
-              />
-              <path
-                fill="#4285F4"
-                d="M23.745 7.163c0-.8-.07-1.58-.2-2.33h-11.55v4.61h6.63c-.29 1.52-1.15 2.81-2.45 3.68l2.68 2.09c2.31-2.13 3.89-5.34 3.89-8.05z"
-              />
-              <path
-                fill="#34A853"
-                d="M11.995 4.783c1.73 0 3.29.6 4.51 1.77l3.39-3.39C17.845 1.253 15.115.5 11.995.5 8.163.5 4.873 2.653 3.197 5.795l3.952 3.076c.783-2.38 3.013-4.088 4.846-4.088z"
-              />
-            </svg>
-            <span>Google Sign-In</span>
-          </button>
+          {/* Google Login Button - Hidden because it's not configured in Supabase */}
 
           {/* Toggle Mode */}
           <div className="mt-6 text-center text-xs text-slate-400 font-medium">
