@@ -243,7 +243,7 @@ export default function Home() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(!!session);
+      // Logic handled in the authListener above
     });
 
     return () => {
