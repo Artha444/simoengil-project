@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { X, ShoppingCart, Trash2, Smile, Plus, Minus } from 'lucide-react';
 import { CartItem, Product } from '@/data/products';
-import confetti from 'canvas-confetti';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   onUpdateQuantity,
   onDetailClick,
 }) => {
+  const router = useRouter();
   // Prevent background scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
@@ -46,14 +47,8 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
 
   const handleCheckoutAll = () => {
     if (cartItems.length === 0) return;
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#ff8fa3', '#fff3b0', '#a8dadc', '#ff4d6d'],
-    });
-    // Open Shopee or Whatsapp
-    window.open('https://shopee.co.id', '_blank', 'noopener,noreferrer');
+    onClose();
+    router.push('/checkout?mode=cart');
   };
 
   const totalItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -212,7 +207,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                 className="w-full py-3 bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white rounded-2xl font-bold text-sm transition-all shadow-md shadow-pink-500/10 hover:shadow-lg hover:scale-[1.01] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Beli Sekarang di Shopee</span>
+                <span>Beli Sekarang</span>
               </button>
               
               <button

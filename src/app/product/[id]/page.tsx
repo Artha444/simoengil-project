@@ -341,12 +341,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   // Format IDR Price
   const formatIDR = (num: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
   };
 
   const getMarketplacePrice = (platform: 'shopee') => {
@@ -500,16 +495,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               </span>
             </div>
           </Link>
-
-          {/* Minimal Navigation Link - Desktop */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Beranda</Link>
-            <Link href="/#katalog" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Katalog</Link>
-            <Link href="/#tentang" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Tentang Kami</Link>
-            <Link href="/#bts" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Behind The Scenes</Link>
-            <Link href="/#faq" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">FAQ</Link>
-          </nav>
-
           {/* Right Header WhatsApp CTA */}
           <div className="flex items-center gap-4">
             {/* Cart Button in Header */}
@@ -518,7 +503,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
               aria-label="Buka Keranjang"
             >
-              <ShoppingBag className="w-5 h-5 group-hover:scale-105 transition-transform" />
+              <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
               {cart.length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
                   {cart.length}
@@ -539,15 +524,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             </a>
           </div>
         </div>
-
-        {/* Mobile Navigation Links Row */}
-        <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
-          <Link href="/" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Beranda</Link>
-          <Link href="/#katalog" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Katalog</Link>
-          <Link href="/#tentang" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Tentang Kami</Link>
-          <Link href="/#bts" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Proses</Link>
-          <Link href="/#faq" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">FAQ</Link>
-        </div>
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex-1">
@@ -561,7 +537,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             <div className="p-2.5 rounded-xl bg-white shadow-xs group-hover:shadow-md border border-[#FFB6C8]/10 group-hover:border-[#FFB6C8]/30 transition-all">
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             </div>
-            <span className="font-heading">Kembali ke Katalog</span>
+            <span className="font-heading">Kembali</span>
           </Link>
           
           <div className="flex items-center gap-2">

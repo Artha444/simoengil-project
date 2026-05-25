@@ -27,6 +27,8 @@ import { OrderTrackingModal } from '@/components/OrderTrackingModal';
 import AuthModal from '@/components/AuthModal';
 import { supabase } from '@/lib/supabase';
 import confetti from 'canvas-confetti';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as LucideIcons from 'lucide-react';
 
 const DynamicIcon = ({ name, className }: { name: string, className?: string }) => {
@@ -108,7 +110,7 @@ export default function Home() {
     logoTextMain: 'Simoengil',
     logoTextSub: 'Plushie & Doll',
     logoIcon: 'Smile',
-    logoImageType: 'icon', // 'icon' or 'image'
+    logoImageType: 'icon',
     logoImageUrl: ''
   });
 
@@ -141,21 +143,11 @@ export default function Home() {
               rating: Number(item.rating || 5.0),
               reviewsCount: Number(item.reviews_count || 0),
               shopeeLink: item.shopee_link || '',
-              tokopediaLink: item.tokopedia_link || '',
-              lazadaLink: specs.lazadaLink || item.lazadaLink || '',
-              tiktokLink: specs.tiktokLink || item.tiktokLink || '',
-              shopeePrice: specs.shopeePrice || item.shopeePrice || undefined,
-              tokopediaPrice: specs.tokopediaPrice || item.tokopediaPrice || undefined,
-              lazadaPrice: specs.lazadaPrice || item.lazadaPrice || undefined,
-              tiktokPrice: specs.tiktokPrice || item.tiktokPrice || undefined,
               shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
-              tokopediaAvailable: specs.tokopediaAvailable !== undefined ? specs.tokopediaAvailable : true,
-              lazadaAvailable: specs.lazadaAvailable !== undefined ? specs.lazadaAvailable : true,
-              tiktokAvailable: specs.tiktokAvailable !== undefined ? specs.tiktokAvailable : true,
               specifications: {
                 material: specs.material || '100% Premium Dacron & Kain Rasfur',
                 size: specs.size || 'Standard',
-                washing: specs.washing || 'Bisa dicuci mesin',
+                washing: specs.washing || 'Bisa dicuci dengan tangan atau mesin cuci',
                 safeForKids: specs.safeForKids !== undefined ? specs.safeForKids : true,
                 shopeePrice: specs.shopeePrice || undefined,
                 shopeeAvailable: specs.shopeeAvailable !== undefined ? specs.shopeeAvailable : true,
@@ -394,58 +386,66 @@ export default function Home() {
         </div>
       )}
 
-      {/* HEADER / NAVBAR */}
-<header className={`sticky ${isAdmin ? 'top-14' : 'top-0'} z-40 bg-[#0A0F1D]/95 backdrop-blur-md border-b border-[#FFB6C8]/10 shadow-md transition-all duration-300`}>
+{/* HEADER / NAVBAR */}
+<header
+  className={`sticky ${
+    isAdmin ? "top-14" : "top-0"
+  } z-40 bg-[#0A0F1D]/95 backdrop-blur-md border-b border-[#FFB6C8]/10 shadow-md transition-all duration-300`}
+>
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
     
-    {/* Logo & Shop Name (Pojok Kiri) */}
-    <a href="#" className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0">
+    {/* Logo & Shop Name */}
+    <Link
+      href="/"
+      className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0"
+    >
       <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center shadow-md shadow-pink-500/10 group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
-        <img src="/images/logo.png" alt="Simoengil Logo" className="w-full h-full object-cover" />
+        <img
+          src="/images/logo.png"
+          alt="Simoengil Logo"
+          className="w-full h-full object-cover"
+        />
       </div>
+
       <div className="min-w-0">
         <span className="text-sm sm:text-xl font-bold text-white tracking-wide group-hover:text-[#FFB6C8] transition-colors font-heading block leading-none truncate">
           Simoengil
         </span>
+
         <span className="text-[8px] sm:text-[10px] text-[#E8B37D] font-extrabold uppercase tracking-widest mt-0.5 sm:mt-1 block truncate">
           Premium Handmade Plushie
         </span>
       </div>
-    </a>
+    </Link>
 
-    {/* Minimal Navigation Link - Desktop */}
+    {/* Desktop Navigation */}
     <nav className="hidden md:flex items-center gap-8">
-      <a href="#" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Beranda</a>
-      <a href="#katalog" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Katalog</a>
-      <a href="#faq" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">FAQ</a>
+      <Link
+        href="/"
+        className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors"
+      >
+        Beranda
+      </Link>
+
+      <Link
+        href="/#katalog"
+        className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors"
+      >
+        Katalog
+      </Link>
+
+      <Link
+        href="/#faq"
+        className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors"
+      >
+        FAQ
+      </Link>
     </nav>
 
-    {/* Right Header CTA */}
+    {/* Right Header Actions */}
     <div className="flex items-center gap-2 sm:gap-4">
-      {/* Track Order Button */}
-      <button
-        onClick={() => setIsTrackingOpen(true)}
-        className="text-xs font-bold text-[#FFB6C8] hover:text-white border border-[#FFB6C8]/30 hover:bg-[#FFB6C8]/20 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer"
-      >
-        <Search className="w-3.5 h-3.5" />
-        Lacak
-      </button>
 
-      {/* Wishlist Button in Header */}
-      <button
-        onClick={() => setIsWishlistOpen(true)}
-        className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
-        aria-label="Buka Keranjang"
-      >
-        <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
-        {cart.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
-            {cart.length}
-          </span>
-        )}
-      </button>
-
-      {/* WA Button */}
+      {/* WhatsApp CTA */}
       <a
         href="https://wa.me/6281545585448?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
         target="_blank"
@@ -453,43 +453,92 @@ export default function Home() {
         className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
       >
         <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span className="hidden sm:inline">Hubungi WhatsApp</span>
-        <span className="sm:hidden">WhatsApp</span>
+
+        <span className="hidden sm:inline">
+          Hubungi WhatsApp
+        </span>
+
+        <span className="sm:hidden">
+          WhatsApp
+        </span>
       </a>
 
-      {/* User Auth / Dashboard Button (Pojok Kanan) */}
+      {/* Wishlist / Cart Button */}
+      <button
+        onClick={() => setIsWishlistOpen(true)}
+        className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
+        aria-label="Buka Keranjang"
+      >
+        <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
+
+        {cart.length > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
+            {cart.length}
+          </span>
+        )}
+      </button>
+
+      {/* User Auth / Dashboard */}
       {user ? (
-        <div className="hidden md:flex items-center ml-2 sm:ml-4">
-          <Link href="/dashboard" className="text-xs font-bold text-white hover:text-[#FFB6C8] transition-colors border border-white/10 hover:border-[#FFB6C8]/30 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl flex items-center gap-1.5">
-            <LucideIcons.User className="w-3.5 h-3.5" />
-            Dashboard Saya
+        <div className="hidden md:flex items-center">
+          <Link
+            href="/dashboard"
+            className="text-white hover:text-[#FFB6C8] transition-all border border-white/10 hover:border-[#FFB6C8]/30 bg-white/5 hover:bg-white/10 p-2.5 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95"
+          >
+            <LucideIcons.User className="w-5 h-5" />
           </Link>
         </div>
       ) : (
         <button
           onClick={() => setIsAuthModalOpen(true)}
-          className="text-xs font-bold text-white hover:text-[#FFB6C8] border border-transparent hover:border-[#FFB6C8]/30 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer ml-2 sm:ml-4"
+          className="text-xs font-bold text-white hover:text-[#FFB6C8] border border-transparent hover:border-[#FFB6C8]/30 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer"
         >
-          <LucideIcons.User className="w-3.5 h-3.5" />
+          <LucideIcons.User className="w-5 h-3.5" />
           Daftar / Masuk
         </button>
       )}
     </div>
+  </div>
 
-    {/* Mobile Navigation Links Row */}
-    <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
-      <a href="#" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Beranda</a>
-      <a href="#katalog" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Katalog</a>
-      <a href="#tentang" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Tentang Kami</a>
-      <a href="#bts" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Proses</a>
-      <a href="#faq" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">FAQ</a>
-      <button onClick={() => setIsTrackingOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Lacak</button>
-      {!user ? (
-        <button onClick={() => setIsAuthModalOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Masuk/Daftar</button>
-      ) : (
-        <Link href="/dashboard" className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Dashboard</Link>
-      )}
-    </div>
+  {/* MOBILE NAVIGATION */}
+  <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
+    <Link
+      href="/"
+      className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors"
+    >
+      Beranda
+    </Link>
+
+    <Link
+      href="/#katalog"
+      className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors"
+    >
+      Katalog
+    </Link>
+    <Link
+      href="/#faq"
+      className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors"
+    >
+      FAQ
+    </Link>
+
+    {/* Mobile Navigation - Akun */}
+{!user ? (
+  <button
+    onClick={() => setIsAuthModalOpen(true)}
+    className="flex items-center gap-1.5 text-xs font-bold text-[#FFB6C8] hover:text-white px-3 py-1 transition-colors"
+  >
+    <LucideIcons.User className="w-4 h-4" />
+    Masuk
+  </button>
+) : (
+  <Link
+    href="/dashboard"
+    className="text-white hover:text-[#FFB6C8] transition-all border border-white/10 hover:border-[#FFB6C8]/30 bg-white/5 hover:bg-white/10 p-2.5 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95"
+  >
+    <LucideIcons.User className="w-4 h-4" />
+  </Link>
+)}
   </div>
 </header>
 
@@ -499,37 +548,37 @@ export default function Home() {
         <div className="w-full lg:w-1/2 text-center lg:text-left space-y-8">
           <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 border border-[#FFB6C8]/30 text-[#FF8FB1] font-bold text-xs uppercase tracking-widest shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-[#E8B37D]" />
-            <span>Premium Local Handmade Brand</span>
+            <span>Boneka Flanel Premium Lokal</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-[#2C2C2C] tracking-tight leading-[1.15] font-heading gsap-hero-title">
-            Dibuat dengan Hati, <br/>
-            <span className="text-[#FF8FB1]">Menemani Setiap</span> Pelukan
+            Boneka Flanel Lembut <br/>
+            <span className="text-[#FF8FB1]">Buat Si Kecil & Kado Spesial</span>
           </h1>
 
           <p className="text-slate-600 text-sm sm:text-base md:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium gsap-hero-subtitle">
-            Boneka plushie premium buatan lokal dengan kualitas ekspor. Setiap karakter dirancang unik, dijahit tangan secara presisi, menggunakan bahan 100% murni hypoallergenic yang aman untuk buah hati Anda.
+            Boneka flanel super lembut, handmade dengan penuh sayang. Cocok untuk pelukan anak, kado ulang tahun, wisuda, atau hadiah untuk orang tersayang.
           </p>
 
           {/* Value Highlights */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 max-w-md mx-auto lg:mx-0 text-left pt-2 gsap-stagger-grid">
-            <div className="flex items-center gap-2.5 text-[11px] sm:text-sm font-bold text-[#2C2C2C]">
-              <span className="text-base sm:text-lg">🌸</span>
-              <span>Kain Impor Hypoallergenic</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-[11px] sm:text-sm font-bold text-[#2C2C2C]">
-              <span className="text-base sm:text-lg">🧸</span>
-              <span>100% Dacron Grade A</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-[11px] sm:text-sm font-bold text-[#2C2C2C]">
-              <span className="text-base sm:text-lg">✨</span>
-              <span>Detail Handmade Rapi</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-[11px] sm:text-sm font-bold text-[#2C2C2C]">
-              <span className="text-base sm:text-lg">❤️</span>
-              <span>Parfum Bayi Menenangkan</span>
-            </div>
-          </div>
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto lg:mx-0 text-left">
+    <div className="flex items-center gap-2.5 text-sm font-bold text-[#2C2C2C]">
+      <span className="text-xl">🧸</span>
+      <span>Super Lembut seperti Pelukan</span>
+    </div>
+    <div className="flex items-center gap-2.5 text-sm font-bold text-[#2C2C2C]">
+      <span className="text-xl">❤️</span>
+      <span>Aman & Nyaman untuk Anak</span>
+    </div>
+    <div className="flex items-center gap-2.5 text-sm font-bold text-[#2C2C2C]">
+      <span className="text-xl">✂️</span>
+      <span>Handmade dengan Teliti</span>
+    </div>
+    <div className="flex items-center gap-2.5 text-sm font-bold text-[#2C2C2C]">
+      <span className="text-xl">🎁</span>
+      <span>Cocok untuk Kado</span>
+    </div>
+  </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 gsap-hero-ctas">
             <a
@@ -537,14 +586,14 @@ export default function Home() {
               onClick={handleHeroCtaClick}
               className="w-full sm:w-auto px-8 py-4 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white font-extrabold rounded-2xl text-center shadow-lg shadow-[#FF8FB1]/20 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer btn-premium-hover"
             >
-              Adopsi Boneka Gemoy
+              Lihat Koleksi Boneka
             </a>
 
             <a
               href="#tentang"
               className="w-full sm:w-auto px-8 py-4 border-2 border-[#FFB6C8]/40 text-[#2C2C2C] hover:text-[#FF8FB1] hover:border-[#FF8FB1] font-bold rounded-2xl hover:bg-white/40 transition-all duration-300 text-center cursor-pointer btn-premium-hover"
             >
-              Kenali Kami
+              Tentang Simoengil
             </a>
           </div>
         </div>
@@ -660,127 +709,31 @@ export default function Home() {
             <div className="lg:col-span-7 space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 border border-[#E8B37D]/30 text-[#E8B37D] font-bold text-xs uppercase tracking-widest">
                 <HeartHandshake className="w-3.5 h-3.5" />
-                <span>Our Storytelling</span>
+                <span>Cerita Simoengil</span>
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#2C2C2C] tracking-tight leading-tight font-heading gsap-section-title relative inline-block pb-3">
-                Cerita Kehangatan di Balik Setiap Boneka Simoengil
+                Boneka Flanel yang Dibuat dengan Kasih Sayang
                 <span className="gsap-underline absolute bottom-0 left-0 bg-[#FF8FB1] h-[3px] w-0"></span>
               </h2>
 
               <div className="space-y-5 text-slate-600 text-sm sm:text-base leading-relaxed font-medium gsap-reveal" data-effect="blur">
                 <p>
-                  Di Simoengil, kami percaya bahwa boneka bukan sekadar boneka biasa. Ia adalah pendengar setia rahasia anak Anda, pemberi pelukan hangat saat sedih, dan teman bermain terbaik yang menemani setiap tumbuh kembang mereka. Oleh karena itu, kami menuangkan hati dan cinta kami ke dalam setiap detail proses pembuatannya.
-                </p>
-                <p>
-                  Semua boneka kami dikerjakan secara <span className="text-[#FF8FB1] font-extrabold">100% handmade</span> oleh pengrajin lokal berpengalaman yang sangat teliti. Kami menolak produksi massal pabrikan demi menjaga nilai keunikan dan kualitas premium di setiap helai benang.
-                </p>
-                <p>
-                  Kami hanya memilih material grade tertinggi: isian <span className="text-[#E8B37D] font-extrabold">100% Silikon Dacron Grade A murni</span> bebas campuran limbah garmen untuk keempukan super tahan lama, serta kain bulu impor (Yelvo & Spandex) bertekstur ultra lembut yang hypoallergenic dan aman bagi pernapasan sensitif si kecil.
-                </p>
+      Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.
+    </p>
+    <p>
+      Saya paham betul seorang ibu ingin yang terbaik untuk anaknya. Makanya saya hanya pakai bahan flanel berkualitas tinggi yang aman dan nyaman dipeluk seharian.
+    </p>
+    <p>
+      Cocok untuk anak kecil, kado ulang tahun, kado wisuda, atau sebagai teman peluk saat anak sedang sedih. Banyak ibu-ibu yang sudah membeli dan senang dengan hasilnya.
+    </p>
               </div>
 
               {/* Highlight Quote */}
               <div className="relative pl-6 border-l-4 border-[#FF8FB1] py-2 bg-white/40 rounded-r-2xl pr-4 gsap-reveal" data-effect="fade-up" data-delay="0.1">
                 <span className="absolute top-1 left-2 text-4xl text-[#FFB6C8]/40 leading-none font-serif">&ldquo;</span>
                 <p className="italic text-[#2C2C2C] font-extrabold text-sm sm:text-base leading-relaxed">
-                  Setiap boneka dibuat dengan teliti oleh pengrajin lokal untuk memastikan kelembutan dan kualitas terbaik.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION B: BEHIND THE SCENES & HANDMADE PROCESS */}
-      <section id="bts" className="relative z-10 py-20 bg-white/40 backdrop-blur-xs border-y border-[#FFB6C8]/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FFF5F0] border border-[#FFB6C8]/30 text-[#FF8FB1] font-bold text-xs uppercase tracking-widest">
-              <Gift className="w-3.5 h-3.5" />
-              <span>Handmade Process</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#2C2C2C] tracking-tight font-heading gsap-section-title relative inline-block pb-3">
-              Behind The Scenes
-              <span className="gsap-underline absolute bottom-0 left-1/2 -translate-x-1/2 bg-[#FF8FB1] h-[3px] w-0"></span>
-            </h2>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-md mx-auto gsap-reveal" data-effect="blur">
-              Lihat bagaimana bahan premium pilihan ditransformasikan menjadi teman pelukan gemoy yang siap mengisi harimu.
-            </p>
-          </div>
-
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-8 md:overflow-visible md:pb-0 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-            
-            {/* Step 1 */}
-            <div className="min-w-[85vw] sm:min-w-[300px] md:min-w-0 snap-center bg-white rounded-[2rem] p-6 border border-[#FFB6C8]/20 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(255,182,200,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group gsap-reveal" data-effect="fade-up" data-delay="0.1">
-              <div>
-                <div className="relative aspect-video rounded-2xl overflow-hidden mb-5 bg-[#FFF8F3]">
-                  <img 
-                    src="/images/detail_fabric.png" 
-                    alt="Langkah 1: Pola & Pemotongan" 
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  <div className="absolute bottom-3 left-3 bg-[#FF8FB1] text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
-                    1
-                  </div>
-                </div>
-                <h3 className="font-heading font-black text-[#2C2C2C] text-base mb-2">Pola & Pemotongan Kain</h3>
-                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-medium">
-                  Kain impor yelvo & rasfur hypoallergenic dipotong presisi menggunakan cetakan pola orisinal Simoengil.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="min-w-[85vw] sm:min-w-[300px] md:min-w-0 snap-center bg-white rounded-[2rem] p-6 border border-[#FFB6C8]/20 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(255,182,200,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group gsap-reveal" data-effect="fade-up" data-delay="0.2">
-              <div>
-                <div className="relative aspect-video rounded-2xl overflow-hidden mb-5 bg-gradient-to-br from-[#FFF5F0] to-[#FFFDF0] flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-[#E8B37D]/10 flex items-center justify-center text-[#E8B37D] font-black text-2xl">🧵</div>
-                  <div className="absolute bottom-3 left-3 bg-[#FF8FB1] text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
-                    2
-                  </div>
-                </div>
-                <h3 className="font-heading font-black text-[#2C2C2C] text-base mb-2">Proses Jahit Manual</h3>
-                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-medium">
-                  Dijahit satu per satu dengan benang ekstra kuat oleh penjahit lokal terampil untuk daya tahan jahitan maksimal.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="min-w-[85vw] sm:min-w-[300px] md:min-w-0 snap-center bg-white rounded-[2rem] p-6 border border-[#FFB6C8]/20 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(255,182,200,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group gsap-reveal" data-effect="fade-up" data-delay="0.3">
-              <div>
-                <div className="relative aspect-video rounded-2xl overflow-hidden mb-5 bg-[#FFF8F3] flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-[#FFB6C8]/10 flex items-center justify-center text-[#FF8FB1] font-black text-2xl">☁️</div>
-                  <div className="absolute bottom-3 left-3 bg-[#FF8FB1] text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
-                    3
-                  </div>
-                </div>
-                <h3 className="font-heading font-black text-[#2C2C2C] text-base mb-2">Isian 100% Dacron</h3>
-                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-medium">
-                  Pengisian Dacron Grade A murni untuk volume optimal. Boneka tetap empuk mengembang walaupun dicuci berulang.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="min-w-[85vw] sm:min-w-[300px] md:min-w-0 snap-center bg-white rounded-[2rem] p-6 border border-[#FFB6C8]/20 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(255,182,200,0.12)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group gsap-reveal" data-effect="fade-up" data-delay="0.4">
-              <div>
-                <div className="relative aspect-video rounded-2xl overflow-hidden mb-5 bg-[#FFF8F3]">
-                  <img 
-                    src="/images/detail_giftbox.png" 
-                    alt="Langkah 4: QC & Pengemasan" 
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  <div className="absolute bottom-3 left-3 bg-[#FF8FB1] text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center">
-                    4
-                  </div>
-                </div>
-                <h3 className="font-heading font-black text-[#2C2C2C] text-base mb-2">QC Ketat & Packaging</h3>
-                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-medium">
-                  Lulus inspeksi jarum dan cacat jahit, disemprot parfum khas Simoengil, lalu dimasukkan ke dalam gift box manis.
+                  “Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.”
                 </p>
               </div>
             </div>
@@ -1053,7 +1006,7 @@ export default function Home() {
             <span className="gsap-underline absolute bottom-0 left-1/2 -translate-x-1/2 bg-[#FF8FB1] h-[3px] w-0"></span>
           </h2>
           <p className="text-slate-500 text-xs sm:text-sm font-medium gsap-reveal" data-effect="blur">
-            Informasi lengkap seputar kualitas boneka, tata cara cuci, dan pengemasan pesanan.
+            Informasi lengkap seputar kualitas boneka, dan pengemasan pesanan.
           </p>
         </div>
 

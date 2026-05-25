@@ -20,7 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
-import { PRODUCTS, Product } from '@/data/products';
+import { PRODUCTS, Product, CartItem } from '@/data/products';
 import { CourierResult } from '@/lib/biteship';
 import confetti from 'canvas-confetti';
 
@@ -31,11 +31,13 @@ function CheckoutContent() {
   const productId = searchParams.get('product_id');
   const initialVariant = searchParams.get('variant');
   const initialVariantType = searchParams.get('type');
+  const isCartMode = searchParams.get('mode') === 'cart';
 
   // Core states
   const [user, setUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedVariantSize, setSelectedVariantSize] = useState<string | null>(initialVariant);
   const [selectedVariantType, setSelectedVariantType] = useState<string | null>(initialVariantType);
   const [quantity, setQuantity] = useState(1);
@@ -93,8 +95,29 @@ function CheckoutContent() {
     };
   }, []);
 
-  // 2. Fetch Product Info
+  // 2. Fetch Product Info (single product mode) or load cart items
   useEffect(() => {
+    if (isCartMode) {
+      // Cart mode: load all items from localStorage
+      setIsLoadingProduct(true);
+      try {
+        const savedCart = localStorage.getItem('simoengil_cart');
+        if (savedCart) {
+          const parsed: CartItem[] = JSON.parse(savedCart);
+          if (parsed.length > 0) {
+            setCartItems(parsed);
+            // Set the first item as the "primary" product for weight/shipping compatibility
+            setProduct(parsed[0]);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load cart for checkout', e);
+      } finally {
+        setIsLoadingProduct(false);
+      }
+      return;
+    }
+
     if (!productId) return;
     
     const fetchProduct = async () => {
@@ -146,7 +169,7 @@ function CheckoutContent() {
     };
 
     fetchProduct();
-  }, [productId]);
+  }, [productId, isCartMode]);
 
   // 3. Search destination hook
   useEffect(() => {
@@ -173,11 +196,9 @@ function CheckoutContent() {
   }, [destinationKeyword, selectedDestination]);
 
   // 5. Estimate Product Weight
-  const calculateWeightGrams = (): number => {
-    if (!product) return 1000;
-    
-    const nameLower = product.name.toLowerCase();
-    const sizeLower = selectedVariantSize?.toLowerCase() || '';
+  const estimateItemWeight = (name: string, size: string, qty: number): number => {
+    const nameLower = name.toLowerCase();
+    const sizeLower = size?.toLowerCase() || '';
 
     let baseWeight = 1000; // default 1kg
 
@@ -191,7 +212,15 @@ function CheckoutContent() {
       baseWeight = 700;
     }
 
-    return baseWeight * quantity;
+    return baseWeight * qty;
+  };
+
+  const calculateWeightGrams = (): number => {
+    if (isCartMode && cartItems.length > 0) {
+      return cartItems.reduce((total, item) => total + estimateItemWeight(item.name, item.selectedVariantSize || '', item.quantity), 0);
+    }
+    if (!product) return 1000;
+    return estimateItemWeight(product.name, selectedVariantSize || '', quantity);
   };
 
   // 6. Calculate shipping fees when destination is selected
@@ -278,7 +307,9 @@ function CheckoutContent() {
   };
 
   const productPrice = getProductPrice();
-  const subtotal = productPrice * quantity;
+  const subtotal = isCartMode
+    ? cartItems.reduce((acc, item) => acc + (item.selectedPrice * item.quantity), 0)
+    : productPrice * quantity;
   
   const isJavaOrBali = selectedDestination?.label?.match(/jawa|bali|banten|jakarta|yogyakarta/i);
   const isFreeShippingEligible = subtotal >= 400000 && isJavaOrBali;
@@ -288,6 +319,10 @@ function CheckoutContent() {
   const shippingFee = rawShippingFee - shippingDiscount;
 
   const grandTotal = subtotal + shippingFee;
+
+  const totalCartQuantity = isCartMode
+    ? cartItems.reduce((acc, item) => acc + item.quantity, 0)
+    : quantity;
 
   const formatIDR = (num: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -325,17 +360,29 @@ function CheckoutContent() {
       const token = session?.access_token;
       const sessionId = localStorage.getItem('simoengil_chat_session');
 
+      const orderItems = isCartMode
+        ? cartItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            size: item.selectedVariantSize || null,
+            type: item.selectedVariantType || null,
+            price: item.selectedPrice,
+            quantity: item.quantity,
+            image: item.image
+          }))
+        : [
+            {
+              id: product?.id,
+              name: product?.name,
+              size: selectedVariantSize,
+              price: productPrice,
+              quantity: quantity,
+              image: product?.image
+            }
+          ];
+
       const orderPayload = {
-        items: [
-          {
-            id: product?.id,
-            name: product?.name,
-            size: selectedVariantSize,
-            price: productPrice,
-            quantity: quantity,
-            image: product?.image
-          }
-        ],
+        items: orderItems,
         shippingAddress: {
           name: name,
           phone: phone,
@@ -457,13 +504,13 @@ function CheckoutContent() {
     );
   }
 
-  if (!product) {
+  if (!product && !(isCartMode && cartItems.length > 0)) {
     return (
       <div className="min-h-screen bg-[#FFF8F3] flex flex-col items-center justify-center p-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-lg border border-[#FFB6C8]/10 space-y-6">
           <div className="w-20 h-20 rounded-full bg-[#FFF5F0] flex items-center justify-center border border-[#FFB6C8]/25 mx-auto text-3xl">🧸</div>
-          <h1 className="text-xl font-black text-[#2C2C2C] font-heading">Produk Tidak Ditemukan</h1>
-          <p className="text-sm text-slate-500">Pilih boneka dari katalog terlebih dahulu sebelum membeli.</p>
+          <h1 className="text-xl font-black text-[#2C2C2C] font-heading">{isCartMode ? 'Keranjang Kosong' : 'Produk Tidak Ditemukan'}</h1>
+          <p className="text-sm text-slate-500">{isCartMode ? 'Keranjang belanja Anda kosong. Tambahkan boneka ke keranjang terlebih dahulu.' : 'Pilih boneka dari katalog terlebih dahulu sebelum membeli.'}</p>
           <Link href="/" className="block w-full py-3 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white rounded-xl font-bold text-sm text-center">
             Kembali ke Toko
           </Link>
@@ -500,18 +547,37 @@ function CheckoutContent() {
               </span>
             </div>
 
-            <div className="flex items-start gap-4 py-1">
-              <div className="w-16 h-16 rounded-xl bg-white border border-pink-100/50 overflow-hidden shrink-0">
-                <img src={product.image} referrerPolicy="no-referrer" alt={product.name} className="w-full h-full object-cover" />
+            {isCartMode && cartItems.length > 0 ? (
+              <div className="space-y-3">
+                {cartItems.map((item) => (
+                  <div key={item.cartItemId} className="flex items-start gap-4 py-1">
+                    <div className="w-16 h-16 rounded-xl bg-white border border-pink-100/50 overflow-hidden shrink-0">
+                      <img src={item.image} referrerPolicy="no-referrer" alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-extrabold text-sm text-slate-800 truncate">{item.name}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Ukuran: {item.selectedVariantSize || 'Standar'} • Jumlah: {item.quantity} pcs
+                      </p>
+                      <p className="text-xs font-extrabold text-[#FF8FB1] mt-1">{formatIDR(item.selectedPrice)}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="min-w-0 flex-1">
-                <h4 className="font-extrabold text-sm text-slate-800 truncate">{product.name}</h4>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Ukuran: {selectedVariantSize || 'Standar'} • Jumlah: {quantity} pcs
-                </p>
-                <p className="text-xs font-extrabold text-[#FF8FB1] mt-1">{formatIDR(productPrice)}</p>
+            ) : product && (
+              <div className="flex items-start gap-4 py-1">
+                <div className="w-16 h-16 rounded-xl bg-white border border-pink-100/50 overflow-hidden shrink-0">
+                  <img src={product.image} referrerPolicy="no-referrer" alt={product.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-extrabold text-sm text-slate-800 truncate">{product.name}</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ukuran: {selectedVariantSize || 'Standar'} • Jumlah: {quantity} pcs
+                  </p>
+                  <p className="text-xs font-extrabold text-[#FF8FB1] mt-1">{formatIDR(productPrice)}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="pt-3 border-t border-pink-100/20 space-y-2 text-xs font-medium text-slate-600">
               <div className="flex justify-between">
@@ -575,18 +641,21 @@ function CheckoutContent() {
       {/* Return link */}
       <div className="mb-8">
         <Link 
-          href={`/product/${product.id}`}
+          href={isCartMode ? '/' : `/product/${product?.id}`}
           className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#FF8FB1] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Detail Boneka</span>
+          <span>{isCartMode ? 'Kembali ke Toko' : 'Kembali ke Detail Boneka'}</span>
         </Link>
       </div>
 
       <div className="text-center max-w-lg mx-auto mb-12">
         <h1 className="text-3xl font-black text-slate-800 font-heading">Checkout Teman Peluk</h1>
         <p className="text-slate-400 text-xs sm:text-sm mt-2 font-medium leading-relaxed">
-          Tinggal satu langkah lagi untuk mengadopsi {product.name} kesayanganmu!
+          {isCartMode
+            ? `Tinggal satu langkah lagi untuk mengadopsi ${totalCartQuantity} boneka kesayanganmu!`
+            : `Tinggal satu langkah lagi untuk mengadopsi ${product?.name} kesayanganmu!`
+          }
         </p>
       </div>
 
@@ -863,54 +932,89 @@ function CheckoutContent() {
               <h2 className="text-lg font-black text-slate-800 font-heading">Ringkasan Pesanan</h2>
             </div>
 
-            {/* Product description card */}
-            <div className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-              <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-pink-100/30 shrink-0">
-                <img src={product.image} referrerPolicy="no-referrer" alt={product.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0 flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 className="font-extrabold text-sm text-slate-800 truncate">{product.name}</h4>
-                  {(selectedVariantType || selectedVariantSize) && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {selectedVariantType && (
-                        <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
-                          Variasi: {selectedVariantType}
-                        </span>
-                      )}
-                      {selectedVariantSize && (
-                        <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
-                          Ukuran: {selectedVariantSize}
-                        </span>
-                      )}
+            {/* Product description card(s) */}
+            {isCartMode && cartItems.length > 0 ? (
+              <div className="space-y-3">
+                {cartItems.map((item) => (
+                  <div key={item.cartItemId} className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-pink-100/30 shrink-0">
+                      <img src={item.image} referrerPolicy="no-referrer" alt={item.name} className="w-full h-full object-cover" />
                     </div>
-                  )}
-                </div>
-                
-                {/* Quantity adjuster */}
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity(quantity - 1)}
-                      className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-full font-bold text-xs flex items-center justify-center cursor-pointer disabled:opacity-50"
-                    >
-                      -
-                    </button>
-                    <span className="text-xs font-extrabold text-slate-700">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-full font-bold text-xs flex items-center justify-center cursor-pointer"
-                    >
-                      +
-                    </button>
+                    <div className="min-w-0 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="font-extrabold text-sm text-slate-800 truncate">{item.name}</h4>
+                        {(item.selectedVariantType || item.selectedVariantSize) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.selectedVariantType && (
+                              <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
+                                Variasi: {item.selectedVariantType}
+                              </span>
+                            )}
+                            {item.selectedVariantSize && (
+                              <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
+                                Ukuran: {item.selectedVariantSize}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-slate-500 font-semibold">{item.quantity} pcs</span>
+                        <span className="text-xs font-black text-slate-800">{formatIDR(item.selectedPrice * item.quantity)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs font-black text-slate-800">{formatIDR(productPrice)}</span>
+                ))}
+              </div>
+            ) : product && (
+              <div className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-pink-100/30 shrink-0">
+                  <img src={product.image} referrerPolicy="no-referrer" alt={product.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-800 truncate">{product.name}</h4>
+                    {(selectedVariantType || selectedVariantSize) && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedVariantType && (
+                          <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
+                            Variasi: {selectedVariantType}
+                          </span>
+                        )}
+                        {selectedVariantSize && (
+                          <span className="text-[9px] font-black text-[#E8B37D] bg-[#FFF8F3] px-2 py-0.5 rounded border border-[#E8B37D]/20">
+                            Ukuran: {selectedVariantSize}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Quantity adjuster */}
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={quantity <= 1}
+                        onClick={() => setQuantity(quantity - 1)}
+                        className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-full font-bold text-xs flex items-center justify-center cursor-pointer disabled:opacity-50"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-extrabold text-slate-700">{quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-full font-bold text-xs flex items-center justify-center cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-xs font-black text-slate-800">{formatIDR(productPrice)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Pricing Details */}
             <div className="space-y-3.5 text-xs font-medium text-slate-500">
