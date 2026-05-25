@@ -22,7 +22,7 @@ interface ProductDetailModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (product: Product, variantSize?: string) => void;
+  onAddToCart: (product: Product, variantSize?: string, variantType?: string) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -34,7 +34,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const router = useRouter();
   const [activeImage, setActiveImage] = useState<string>("");
   const [user, setUser] = useState<any>(null);
+  const [selectedSizeState, setSelectedSizeState] = useState<string | null>(null);
+  const [selectedTypeState, setSelectedTypeState] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const productTypes = product?.specifications?.types || [];
+  const productSizes = product?.specifications?.sizes || [];
+  
+  const hasTypes = productTypes.length > 0;
+  const hasSizes = productSizes.length > 0;
+  
+  const isTypeSelected = !hasTypes || selectedTypeState !== null;
+  const isSizeSelected = !hasSizes || selectedSizeState !== null;
+  const isPurchaseDisabled = !isTypeSelected || !isSizeSelected;
+
 
   useEffect(() => {
     const checkUser = async () => {
@@ -134,58 +147,49 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </button>
 
         {/* Left Side: Image */}
-        <div className="md:w-1/2 p-6 bg-[#FFF8F3]/60 flex flex-col justify-center gap-4 relative min-h-[300px] md:min-h-[400px]">
-          <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-pink-100/30 flex items-center justify-center">
+        <div className="md:w-1/2 p-6 bg-[#FFF8F3]/60 flex flex-col justify-center relative min-h-[300px] md:min-h-[400px]">
+          <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-pink-100/30 flex items-center justify-center group shadow-sm">
             <img
               src={activeImage || product.image}
               referrerPolicy="no-referrer"
               alt={product.name}
               className="absolute inset-0 w-full h-full object-cover"
             />
-          </div>
-
-          {/* Thumbnails */}
-          <div className="grid grid-cols-3 gap-2 w-full">
-            {galleryImages.map((imgSrc, index) => {
-              const isActive =
-                activeImage === imgSrc || (index === 0 && activeImage === "");
-              return (
-                <button
-                  key={index}
-                  onClick={() => setActiveImage(imgSrc)}
-                  className={`relative aspect-square rounded-xl overflow-hidden bg-white border-2 transition-all cursor-pointer hover:border-[#FF8FB1] ${
-                    isActive
-                      ? "border-[#FF8FB1] shadow-xs scale-95"
-                      : "border-pink-100/20"
-                  }`}
-                >
-                  <img
-                    src={imgSrc}
-                    referrerPolicy="no-referrer"
-                    alt={`Preview ${index + 1}`}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </button>
-              );
-            })}
+            {/* Thumbnails Overlay */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 z-10 overflow-x-auto scrollbar-none">
+              {galleryImages.map((imgSrc, index) => {
+                const isActive =
+                  activeImage === imgSrc || (index === 0 && activeImage === "");
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setActiveImage(imgSrc)}
+                    className={`relative w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm border-2 transition-all cursor-pointer hover:border-[#FFB6C8] shrink-0 ${
+                      isActive
+                        ? "border-[#FF8FB1] shadow-md scale-100"
+                        : "border-transparent opacity-70 hover:opacity-100 scale-95"
+                    }`}
+                  >
+                    <img
+                      src={imgSrc}
+                      referrerPolicy="no-referrer"
+                      alt={`Preview ${index + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Right Side: Details */}
         <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between">
           <div>
-            {/* Category and Badges */}
-            <div className="flex items-center gap-2 mb-3.5 flex-wrap">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-[#FF8FB1] bg-[#FFF5F0] px-3 py-1 rounded-full border border-[#FFB6C8]/40">
-                {product.category}
-              </span>
-              <span className="text-[10px] uppercase tracking-wider font-bold text-[#E8B37D] bg-[#FFF8F3] px-3 py-1 rounded-full border border-[#E8B37D]/30">
-                {product.status}
-              </span>
-            </div>
+            {/* Badges Removed per request */}
 
             {/* Title */}
-            <h2 className="text-2xl font-extrabold text-[#2C2C2C] mb-2 leading-tight font-heading">
+            <h2 className="text-lg sm:text-xl font-bold text-[#2C2C2C] mb-2 leading-tight">
               {product.name}
             </h2>
 
@@ -318,60 +322,60 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
           {/* Action Call to Actions */}
           <div className="space-y-3.5">
+            {/* Variant Type Selection */}
+            {hasTypes && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pilih Varian</label>
+                <select
+                  value={selectedTypeState || ''}
+                  onChange={e => setSelectedTypeState(e.target.value)}
+                  className="w-full p-2 border rounded bg-white"
+                >
+                  <option value="" disabled>-- Pilih Varian --</option>
+                  {productTypes.map(t => (
+                    <option key={t.name} value={t.name}>
+                      {t.name}{t.extraPrice ? ` (+${formatIDR(t.extraPrice)})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Variant Size Selection */}
+            {hasSizes && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pilih Ukuran</label>
+                <select
+                  value={selectedSizeState || ''}
+                  onChange={e => setSelectedSizeState(e.target.value)}
+                  className="w-full p-2 border rounded bg-white"
+                >
+                  <option value="" disabled>-- Pilih Ukuran --</option>
+                  {productSizes.map(s => (
+                    <option key={s.name} value={s.name}>
+                      {s.name}{s.extraPrice ? ` (+${formatIDR(s.extraPrice)})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex gap-2 w-full mt-4">
               <button
+                disabled={isPurchaseDisabled}
                 onClick={() => {
-                  if (product) {
-                    onAddToCart(product, product.variants?.[0]?.size);
-                    onClose();
-                  }
+                  const selectedSize = selectedSizeState || undefined;
+                  const selectedType = selectedTypeState || undefined;
+                  onAddToCart(product, selectedSize, selectedType);
+                  onClose();
                 }}
-                className="flex-1 py-3 px-2 bg-[#0F4C5C] hover:bg-[#0B3A46] text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_15px_rgba(15,76,92,0.2)] flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
+                className={`flex-1 py-3 px-2 ${isPurchaseDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0F4C5C] hover:bg-[#0B3A46] text-white hover:scale-[1.02] active:scale-95 shadow-[0_4px_15px_rgba(15,76,92,0.2)]'} rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2`}
               >
                 <ShoppingCart className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 <span>+ Keranjang</span>
               </button>
-              <button
-                onClick={handleBuyClick}
-                className="flex-1 py-3 px-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_15px_rgba(249,115,22,0.3)] flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
-              >
-                <span>Beli Sekarang</span>
-              </button>
             </div>
 
-            <div className="relative flex items-center justify-center my-1.5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <span className="relative px-3 text-[9px] font-black text-slate-400 bg-white uppercase tracking-widest">
-                Atau Beli di Official Store
-              </span>
-            </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
-              {/* Shopee */}
-              <button
-                disabled={
-                  !product.shopeeLink || product.shopeeAvailable === false
-                }
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(
-                    product.shopeeLink || "https://shopee.co.id",
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all duration-300 ${
-                  !product.shopeeLink || product.shopeeAvailable === false
-                    ? "bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed opacity-60 pointer-events-none"
-                    : "bg-shopee hover:bg-shopee-hover text-white shadow-xs hover:scale-[1.03] active:scale-95 cursor-pointer shadow-orange-500/10"
-                }`}
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>Shopee</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

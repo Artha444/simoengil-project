@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${poppins.variable} ${inter.variable} scroll-smooth h-full`}>
+    <html lang="id" className={`${poppins.variable} ${inter.variable} scroll-smooth h-full`} data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col font-sans text-[#2C2C2C] antialiased selection:bg-pink-100 selection:text-pink-600 relative overflow-x-hidden">
         
         {/* Midtrans Snap JS SDK */}

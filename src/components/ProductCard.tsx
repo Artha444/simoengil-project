@@ -86,14 +86,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div className="group relative bg-white rounded-2xl sm:rounded-[2.2rem] p-2 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2.5 transition-all duration-500 flex flex-col justify-between border border-slate-100 hover:border-slate-200">
-      {/* Badge di pojok kiri atas */}
-      {product.status && (
-        <div className="absolute top-2.5 left-2.5 sm:top-5 sm:left-5 z-10">
-          <span className="text-[8px] sm:text-[10px] font-bold tracking-wider px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-xl sm:rounded-2xl bg-[#FF9F89] text-white shadow-sm border border-white/40 uppercase font-heading group-hover:scale-110 transition-all inline-block">
-            {product.status}
-          </span>
-        </div>
-      )}
+      {/* Badge Removed per request */}
 
 
 
@@ -122,7 +115,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Name */}
         <h3 
-          className="font-bold text-slate-800 text-xs sm:text-base group-hover:text-teal-700 transition-colors duration-300 cursor-pointer line-clamp-2 mb-1 sm:mb-2 font-heading leading-tight"
+          className="font-medium text-slate-800 text-xs sm:text-sm group-hover:text-teal-700 transition-colors duration-300 cursor-pointer line-clamp-2 mb-1 sm:mb-2 leading-tight"
           onClick={() => onDetailClick(product)}
         >
           {product.name}

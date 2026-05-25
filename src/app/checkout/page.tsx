@@ -556,7 +556,7 @@ function CheckoutContent() {
               Belanja Lagi
             </Link>
             <a 
-              href={`https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20sudah%20melakukan%20pembayaran%20untuk%20Order%20ID:%20${placedOrderId}.%20Tolong%20segera%20diproses%20ya!%20Terima%20kasih.`}
+              href={`https://wa.me/6281545585448?text=Halo%20Admin,%20saya%20sudah%20melakukan%20pembayaran%20untuk%20Order%20ID:%20${placedOrderId}.%20Tolong%20segera%20diproses%20ya!%20Terima%20kasih.`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 py-4 border border-[#FF8FB1] text-[#FF8FB1] hover:bg-[#FFF5F0] rounded-2xl font-black text-xs sm:text-sm text-center transition-all"

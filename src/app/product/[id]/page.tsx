@@ -370,7 +370,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const getWhatsAppLink = (productName: string, sizeName: string | null) => {
     const sizeText = sizeName ? ` ukuran ${sizeName}` : '';
     const text = `Halo Min, saya tertarik dengan Boneka ${productName}${sizeText} yang ada di website Simoengil.`;
-    return `https://wa.me/6281234567890?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/6281545585448?text=${encodeURIComponent(text)}`;
   };
 
   // Sync cart to localStorage
@@ -423,21 +423,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   const handleBuyNow = () => {
     if (isPurchaseDisabled) return;
-    
-    // Create cart item
-    const cartItemId = `${product.id}-${selectedSize || 'default'}-${Date.now()}`;
-    const newItem: CartItem = {
-      ...product,
-      cartItemId,
-      selectedVariantType: selectedType || undefined,
-      selectedVariantSize: selectedSize || undefined,
-      quantity: 1,
-      selectedPrice: currentPrice ?? 0,
-    };
-
-    const updated = [...cart, newItem];
-    setCart(updated);
-    localStorage.setItem('simoengil_cart', JSON.stringify(updated));
     
     // Langsung ke checkout
     let checkoutUrl = `/checkout?product_id=${product.id}`;
@@ -543,7 +528,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
             {/* WA Button */}
             <a
-              href="https://wa.me/6281234567890?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
+              href="https://wa.me/6281545585448?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
@@ -605,17 +590,39 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             {/* LEFT COLUMN: IMAGE GALLERY VIEWER (45% Width) */}
             <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
               
-              <div className="flex flex-col-reverse md:flex-row gap-4 items-start">
-                {/* Gallery Thumbnails List (Vertical on Desktop, Horizontal on Mobile) */}
-                <div className="flex flex-row md:flex-col gap-3 overflow-x-auto md:overflow-x-visible w-full md:w-20 shrink-0 pb-2 md:pb-0 scrollbar-none">
+              <div className="relative w-full aspect-[4/5] rounded-none sm:rounded-[2rem] overflow-hidden bg-[#FFF8F3]/40 border border-[#FFB6C8]/10 flex items-center justify-center group shadow-sm">
+                <div 
+                  className="absolute inset-0 w-full h-full cursor-zoom-in perspective-1000 transition-transform duration-200 ease-out"
+                  style={{ transform: `rotateY(${photoTilt.x}deg) rotateX(${photoTilt.y}deg)` }}
+                  onMouseMove={handleMouseMove}
+                  onMouseEnter={() => setIsZoomed(true)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <img
+                    key={activeImage || product.image}
+                    src={activeImage || product.image}
+                    referrerPolicy="no-referrer"
+                    alt={product.name}
+                    style={{
+                      transformOrigin: zoomOrigin,
+                      transform: isZoomed ? 'scale(1.8)' : 'scale(1)',
+                    }}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out animate-in fade-in"
+                  />
+                </div>
+                {/* Subtle pink gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#FFB6C8]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                
+                {/* Thumbnails Overlay */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 z-10 overflow-x-auto scrollbar-none">
                   {galleryImages.map((imgSrc, index) => {
                     const isActive = activeImage === imgSrc || (index === 0 && activeImage === '');
                     return (
                       <button
                         key={index}
                         onClick={() => setActiveImage(imgSrc)}
-                        className={`relative w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-[#FFF8F3]/20 border-2 transition-all cursor-pointer hover:border-[#FFB6C8] hover:scale-105 duration-200 shrink-0 ${
-                          isActive ? 'border-[#FF8FB1] shadow-md shadow-pink-500/10 scale-95' : 'border-[#FFB6C8]/10'
+                        className={`relative w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm border-2 transition-all cursor-pointer hover:border-[#FFB6C8] shrink-0 ${
+                          isActive ? 'border-[#FF8FB1] shadow-md scale-100' : 'border-transparent opacity-70 hover:opacity-100 scale-95'
                         }`}
                       >
                         <img
@@ -627,33 +634,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                       </button>
                     );
                   })}
-                </div>
-
-                {/* Main Image Frame with Zoom Effect & Overlay */}
-                <div 
-                  className="flex-1 w-full relative aspect-square rounded-[2rem] overflow-hidden bg-[#FFF8F3]/40 border border-[#FFB6C8]/10 flex items-center justify-center p-4 group cursor-zoom-in shadow-sm perspective-1000 transition-transform duration-200 ease-out"
-                  style={{ transform: `rotateY(${photoTilt.x}deg) rotateX(${photoTilt.y}deg)` }}
-                >
-                  <div 
-                    className="absolute inset-0 w-full h-full"
-                    onMouseMove={handleMouseMove}
-                    onMouseEnter={() => setIsZoomed(true)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <img
-                      key={activeImage || product.image} // Force re-render on image change for smooth fade
-                      src={activeImage || product.image}
-                      referrerPolicy="no-referrer"
-                      alt={product.name}
-                      style={{
-                        transformOrigin: zoomOrigin,
-                        transform: isZoomed ? 'scale(1.8)' : 'scale(1)',
-                      }}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out animate-in fade-in"
-                    />
-                  </div>
-                  {/* Subtle pink gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#FFB6C8]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </div>
               </div>
 
@@ -672,21 +652,10 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
               
               <div>
-                {/* Category & Handmade Badges */}
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#FF8FB1] bg-[#FFF5F0] px-4 py-1.5 rounded-full border border-[#FFB6C8]/25 shadow-2xs">
-                    {product.category}
-                  </span>
-                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#E8B37D] bg-[#FFFBF0] px-4 py-1.5 rounded-full border border-[#E8B37D]/25 shadow-2xs">
-                    Handmade
-                  </span>
-                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#FF8FB1] bg-pink-50 text-pink-600 px-4 py-1.5 rounded-full border border-[#FFB6C8]/20 shadow-2xs">
-                    Premium Quality
-                  </span>
-                </div>
+                {/* Badges Removed per request */}
 
                 {/* Product Name */}
-                <h1 className="gsap-hero-title text-3xl sm:text-4xl lg:text-5xl font-black text-[#2C2C2C] font-heading mb-4 leading-tight tracking-tight">
+                <h1 className="gsap-hero-title text-xl sm:text-2xl lg:text-3xl font-bold text-[#2C2C2C] mb-4 leading-tight">
                   {product.name}
                 </h1>
 
@@ -810,12 +779,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                   </div>
                 )}
 
-                {/* Emotional short description */}
-                <div className="prose prose-sm text-slate-600 leading-relaxed mb-6 font-medium">
-                  <p className="italic border-l-4 border-[#FFB6C8]/50 pl-4 py-1 text-slate-500">
-                    &quot;Dibuat satu per satu dengan cinta oleh pengrajin lokal kami. Setiap jahitan membawa kehangatan, kelembutan, dan persahabatan yang akan menemani setiap mimpi indahmu.&quot;
-                  </p>
-                </div>
+                {/* Emotional short description removed per request */}
 
                 {/* Accordion Sections */}
                 <div className="border-t border-slate-100 pt-4 space-y-2">

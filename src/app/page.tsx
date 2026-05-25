@@ -11,7 +11,7 @@ import {
   RefreshCw, 
   HelpCircle, 
   MessageSquare, 
-  ShoppingBag, 
+  ShoppingBag, ShoppingCart, 
   ChevronDown,
   Gift,
   HeartHandshake,
@@ -163,6 +163,8 @@ export default function Home() {
                 images: specs.images || [],
                 soldCount: specs.soldCount || 0,
                 testimonials: specs.testimonials || [],
+                types: specs.types || [],
+                sizes: specs.sizes || [],
               },
               variants: (item.variants || []).map((v: Partial<ProductVariant>) => ({
                 ...v,
@@ -269,8 +271,8 @@ export default function Home() {
     localStorage.setItem('simoengil_cart', JSON.stringify(updatedCart));
   };
   
-  const handleAddToCart = (product: Product, variantSize?: string) => {
-    const cartItemId = variantSize ? `${product.id}-${variantSize}` : product.id;
+  const handleAddToCart = (product: Product, variantSize?: string, variantType?: string) => {
+    const cartItemId = `${product.id}-${variantSize || 'default'}-${variantType || 'default'}`;
     const existingItem = cart.find(item => item.cartItemId === cartItemId);
     
     let updatedCart;
@@ -282,11 +284,16 @@ export default function Home() {
       );
     } else {
       let price = product.price;
-      if (variantSize && product.variants) {
-        const v = product.variants.find(v => v.size === variantSize);
-        if (v && v.price) price = v.price;
-      }
-      updatedCart = [...cart, { ...product, cartItemId, selectedVariantSize: variantSize, quantity: 1, selectedPrice: price }];
+      const sizes = product.specifications?.sizes || [];
+      const types = product.specifications?.types || [];
+      
+      const sizeObj = sizes.find(s => s.name === variantSize);
+      const typeObj = types.find(t => t.name === variantType);
+      
+      if (sizeObj && sizeObj.extraPrice) price += sizeObj.extraPrice;
+      if (typeObj && typeObj.extraPrice) price += typeObj.extraPrice;
+      
+      updatedCart = [...cart, { ...product, cartItemId, selectedVariantSize: variantSize, selectedVariantType: variantType, quantity: 1, selectedPrice: price }];
     }
     
     setCart(updatedCart);
@@ -388,105 +395,102 @@ export default function Home() {
       )}
 
       {/* HEADER / NAVBAR */}
-      <header className={`sticky ${isAdmin ? 'top-14' : 'top-0'} z-40 bg-[#0A0F1D]/95 backdrop-blur-md border-b border-[#FFB6C8]/10 shadow-md transition-all duration-300`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          
-          {/* Logo & Shop Name */}
-          <a href="#" className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center shadow-md shadow-pink-500/10 group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
-              <img src="/images/logo.png" alt="Simoengil Logo" className="w-full h-full object-cover" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-sm sm:text-xl font-bold text-white tracking-wide group-hover:text-[#FFB6C8] transition-colors font-heading block leading-none truncate">
-                Simoengil
-              </span>
-              <span className="text-[8px] sm:text-[10px] text-[#E8B37D] font-extrabold uppercase tracking-widest mt-0.5 sm:mt-1 block truncate">
-                Premium Handmade Plushie
-              </span>
-            </div>
-          </a>
-
-          {/* Minimal Navigation Link - Desktop */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Beranda</a>
-            <a href="#katalog" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Katalog</a>
-            <a href="#tentang" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Tentang Kami</a>
-            <a href="#faq" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">FAQ</a>
-          </nav>
-
-          {/* Right Header CTA */}
-                    <div className="flex items-center gap-2 sm:gap-4 flex-1">
-            {/* Track Order Button */}
-            <button
-              onClick={() => setIsTrackingOpen(true)}
-              className="text-xs font-bold text-[#FFB6C8] hover:text-white border border-[#FFB6C8]/30 hover:bg-[#FFB6C8]/20 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer"
-            >
-              <Search className="w-3.5 h-3.5" />
-              Lacak
-            </button>
-
-            {/* Wishlist Button in Header */}
-            <button
-              onClick={() => setIsWishlistOpen(true)}
-              className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
-              aria-label="Buka Keranjang"
-            >
-              <Heart className="w-5 h-5 group-hover:scale-105 transition-transform" />
-              {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
-                  {cart.length}
-                </span>
-              )}
-            </button>
-
-            {/* WA Button */}
-            <a
-              href="https://wa.me/6281234567890?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
-            >
-              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Hubungi WhatsApp</span>
-                <span className="sm:hidden">WhatsApp</span>
-              </a>
-              {/* User Auth / Dashboard Button */}
-              {user ? (
-                <div className="hidden md:flex items-center gap-3 ml-auto">
-                  <Link href="/dashboard" className="text-xs font-bold text-white hover:text-[#FFB6C8] transition-colors flex items-center gap-1.5">
-                    <LucideIcons.User className="w-3.5 h-3.5" />
-                    Dashboard Saya
-                  </Link>
-                  <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-bold text-white/50 hover:text-white transition-colors">
-                    Keluar
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="text-xs font-bold text-white hover:text-[#FFB6C8] border border-transparent hover:border-[#FFB6C8]/30 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer ml-auto"
-                >
-                  <LucideIcons.User className="w-3.5 h-3.5" />
-                  Daftar / Masuk
-                </button>
-              )}
-            </div>
-
-        {/* Mobile Navigation Links Row */}
-        <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
-          <a href="#" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Beranda</a>
-          <a href="#katalog" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Katalog</a>
-          <a href="#tentang" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Tentang Kami</a>
-          <a href="#bts" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Proses</a>
-          <a href="#faq" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">FAQ</a>
-          <button onClick={() => setIsTrackingOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Lacak</button>
-          {!user ? (
-            <button onClick={() => setIsAuthModalOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Masuk/Daftar</button>
-          ) : (
-            <Link href="/dashboard" className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Dashboard</Link>
-          )}
-        </div>
+<header className={`sticky ${isAdmin ? 'top-14' : 'top-0'} z-40 bg-[#0A0F1D]/95 backdrop-blur-md border-b border-[#FFB6C8]/10 shadow-md transition-all duration-300`}>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+    
+    {/* Logo & Shop Name (Pojok Kiri) */}
+    <a href="#" className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0">
+      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center shadow-md shadow-pink-500/10 group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
+        <img src="/images/logo.png" alt="Simoengil Logo" className="w-full h-full object-cover" />
       </div>
+      <div className="min-w-0">
+        <span className="text-sm sm:text-xl font-bold text-white tracking-wide group-hover:text-[#FFB6C8] transition-colors font-heading block leading-none truncate">
+          Simoengil
+        </span>
+        <span className="text-[8px] sm:text-[10px] text-[#E8B37D] font-extrabold uppercase tracking-widest mt-0.5 sm:mt-1 block truncate">
+          Premium Handmade Plushie
+        </span>
+      </div>
+    </a>
+
+    {/* Minimal Navigation Link - Desktop */}
+    <nav className="hidden md:flex items-center gap-8">
+      <a href="#" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Beranda</a>
+      <a href="#katalog" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">Katalog</a>
+      <a href="#faq" className="text-sm font-bold text-white/95 hover:text-[#FFB6C8] transition-colors nav-link-underline">FAQ</a>
+    </nav>
+
+    {/* Right Header CTA */}
+    <div className="flex items-center gap-2 sm:gap-4">
+      {/* Track Order Button */}
+      <button
+        onClick={() => setIsTrackingOpen(true)}
+        className="text-xs font-bold text-[#FFB6C8] hover:text-white border border-[#FFB6C8]/30 hover:bg-[#FFB6C8]/20 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer"
+      >
+        <Search className="w-3.5 h-3.5" />
+        Lacak
+      </button>
+
+      {/* Wishlist Button in Header */}
+      <button
+        onClick={() => setIsWishlistOpen(true)}
+        className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-[#FFB6C8]/30 text-[#FFB6C8] transition-all flex items-center justify-center cursor-pointer group hover:scale-105 active:scale-95"
+        aria-label="Buka Keranjang"
+      >
+        <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
+        {cart.length > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-[#0A0F1D] shadow-sm">
+            {cart.length}
+          </span>
+        )}
+      </button>
+
+      {/* WA Button */}
+      <a
+        href="https://wa.me/6281545585448?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
+      >
+        <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <span className="hidden sm:inline">Hubungi WhatsApp</span>
+        <span className="sm:hidden">WhatsApp</span>
+      </a>
+
+      {/* User Auth / Dashboard Button (Pojok Kanan) */}
+      {user ? (
+        <div className="hidden md:flex items-center ml-2 sm:ml-4">
+          <Link href="/dashboard" className="text-xs font-bold text-white hover:text-[#FFB6C8] transition-colors border border-white/10 hover:border-[#FFB6C8]/30 bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl flex items-center gap-1.5">
+            <LucideIcons.User className="w-3.5 h-3.5" />
+            Dashboard Saya
+          </Link>
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsAuthModalOpen(true)}
+          className="text-xs font-bold text-white hover:text-[#FFB6C8] border border-transparent hover:border-[#FFB6C8]/30 px-3 py-2 rounded-xl transition-all hidden md:flex items-center gap-1.5 cursor-pointer ml-2 sm:ml-4"
+        >
+          <LucideIcons.User className="w-3.5 h-3.5" />
+          Daftar / Masuk
+        </button>
+      )}
+    </div>
+
+    {/* Mobile Navigation Links Row */}
+    <div className="md:hidden flex items-center justify-center gap-4 py-2 border-t border-white/5 bg-[#0A0F1D]/85 overflow-x-auto whitespace-nowrap scrollbar-none px-4">
+      <a href="#" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Beranda</a>
+      <a href="#katalog" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Katalog</a>
+      <a href="#tentang" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Tentang Kami</a>
+      <a href="#bts" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">Proses</a>
+      <a href="#faq" className="text-xs font-bold text-white/80 hover:text-[#FFB6C8] px-2 py-1 transition-colors">FAQ</a>
+      <button onClick={() => setIsTrackingOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Lacak</button>
+      {!user ? (
+        <button onClick={() => setIsAuthModalOpen(true)} className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Masuk/Daftar</button>
+      ) : (
+        <Link href="/dashboard" className="text-xs font-bold text-[#FFB6C8] hover:text-white px-2 py-1 transition-colors">Dashboard</Link>
+      )}
+    </div>
+  </div>
 </header>
 
       {/* HERO SECTION */}
