@@ -337,24 +337,27 @@ export default function Home() {
 
   // FAQs
   const faqs = [
-    {
-      q: 'Apakah semua boneka di Boneka Simoengil aman untuk bayi?',
-      a: 'Sangat aman! Seluruh produk kami menggunakan isian 100% premium silikon dacron Grade A yang bebas debu dan bersifat hypoallergenic. Bahan luar menggunakan kain rajut bulu ultra lembut (seperti yelvo, spandex, snail mawar) yang tidak mudah rontok, aman dihirup bayi, serta tidak menyebabkan gatal pada kulit sensitif.'
-    },
-    {
-      q: 'Bagaimana cara mencuci boneka agar tidak kempis?',
-      a: 'Sangat mudah! Kamu bisa mencucinya dengan tangan (kucek perlahan dengan air hangat kuku dan sabun bayi) atau menggunakan mesin cuci. Untuk pencucian mesin cuci, masukkan boneka ke dalam laundry bag, pilih mode putaran paling lembut (delicate/wool), keringkan dengan pengering mesin cuci, lalu jemur di tempat teduh berangin. Setelah kering, tepuk-tepuk boneka perlahan agar dacron mengembang sempurna seperti baru!'
-    },
-    {
-      q: 'Apakah bisa memesan kado wisuda custom kartu ucapan?',
-      a: 'Bisa banget! Untuk pembelian seri Kado Wisuda, kami memberikan GRATIS selempang nama kelulusan mini dan kartu ucapan kustom. Silakan tulis nama wisudawan dan isi pesan ucapan pada catatan pesanan saat melakukan pembelian di Shopee atau Tokopedia.'
-    },
-    {
-      q: 'Berapa lama waktu pengemasan dan pengiriman?',
-      a: 'Kami mengirim setiap hari! Untuk pesanan reguler yang masuk sebelum pukul 15.00 WIB, paket akan dikirim di hari yang sama. Untuk wilayah Jabodetabek, pengiriman instan/sameday juga tersedia via marketplace Shopee dan Tokopedia.'
-    }
-  ];
-
+  {
+    q: 'Apakah boneka flanel Simoengil aman untuk bayi dan balita?',
+    a: 'Sangat aman, Bu. Boneka kami terbuat dari kain flanel premium yang lembut dan hypoallergenic (tidak mudah menyebabkan alergi). Jahitannya rapi, tidak ada bagian kecil yang mudah lepas, sehingga aman untuk anak kecil dan bayi.'
+  },
+  {
+    q: 'Boneka flanel boleh dicuci tidak?',
+    a: 'Boneka flanel sebaiknya **tidak dicuci dengan mesin cuci** agar bulu dan bentuknya tetap bagus. Saran kami: cukup lap dengan kain bersih yang dibasahi air hangat kuku + sedikit sabun bayi. Jika kotor sekali, bisa dibawa ke laundry dry clean. Hindari merendam lama agar tidak merusak kain flanel.'
+  },
+  {
+    q: 'Apakah bisa pesan boneka untuk kado wisuda dengan custom nama?',
+    a: 'Tidak bisa, untuk pesanan custom tidak dilakukan di website, jika ingin dilakukan custom silahkan lakukan pembelian di Shopee'
+  },
+  {
+    q: 'Berapa lama proses packing dan pengiriman?',
+    a: 'Kami packing dan kirim setiap hari. Pesanan yang masuk sebelum jam 15.00 WIB biasanya dikirim di hari yang sama. Untuk Jabodetabek tersedia pengiriman sameday/instan melalui Shopee.'
+  },
+  {
+    q: 'Apakah ada garansi jika boneka rusak atau cacat?',
+    a: 'Ada garansi kualitas. Jika dalam 7 hari setelah terima ada cacat produksi (jahitan lepas, bahan robek, dll), silakan hubungi kami via WhatsApp untuk proses penggantian atau pengembalian.'
+  }
+];
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip selection:bg-pink-100 selection:text-pink-600 bg-transparent font-sans text-slate-800">
       <GSAPInitializer />

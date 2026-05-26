@@ -497,6 +497,18 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           </Link>
           {/* Right Header WhatsApp CTA */}
           <div className="flex items-center gap-4">
+            {/* WA Button */}
+            <a
+              href="https://wa.me/6281545585448?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
+            >
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Hubungi WhatsApp</span>
+              <span className="sm:hidden">WhatsApp</span>
+            </a>
+
             {/* Cart Button in Header */}
             <button
               onClick={() => setIsWishlistOpen(true)}
@@ -510,18 +522,6 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                 </span>
               )}
             </button>
-
-            {/* WA Button */}
-            <a
-              href="https://wa.me/6281545585448?text=Halo%20Simoengil,%20saya%20tertarik%20dengan%20boneka%20handmade%20Simoengil!"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF8FB1] to-[#FFB6C8] hover:from-[#FFB6C8] hover:to-[#FF8FB1] text-white font-extrabold text-[10px] sm:text-xs md:text-sm rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
-            >
-              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Hubungi WhatsApp</span>
-              <span className="sm:hidden">WhatsApp</span>
-            </a>
           </div>
         </div>
       </header>

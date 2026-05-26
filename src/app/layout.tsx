@@ -20,6 +20,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Boneka Simoengil | Temukan Teman Peluk Pertamamu!",
   description: "Toko boneka & plushie premium online. Bahan 100% dacron premium grade A, washable, hypoallergenic, cocok untuk anak-anak & kado istimewa.",
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png' },
+      { url: '/favicon.ico', type: 'image/x-icon' },
+    ],
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
