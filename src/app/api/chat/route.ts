@@ -95,11 +95,11 @@ export async function GET(request: Request) {
             last_message: msg.content,
             last_message_at: msg.created_at,
             last_sender: msg.sender_role,
-            unread: 0,
+            unread: msg.sender_role === 'USER' && !msg.is_read ? 1 : 0,
           });
         } else {
           const conv = conversationMap.get(pid);
-          if (msg.sender_role === 'USER') {
+          if (msg.sender_role === 'USER' && !msg.is_read) {
             conv.unread++;
           }
         }
@@ -141,15 +141,16 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { action, product_id } = body;
+    const { action, product_id, role_to_mark } = body;
 
     if (action === 'mark_read' && product_id) {
+      const targetRole = role_to_mark || 'USER';
       const supabaseAdmin = getAdminClient();
       const { error } = await supabaseAdmin
         .from('messages')
         .update({ is_read: true })
         .eq('product_id', product_id)
-        .eq('sender_role', 'USER')
+        .eq('sender_role', targetRole)
         .eq('is_read', false);
 
       if (error) {

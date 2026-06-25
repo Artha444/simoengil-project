@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Send, User, Search, RefreshCw, ArrowLeft, Circle } from 'lucide-react';
+import { MessageSquare, Send, User, Search, RefreshCw, ArrowLeft, Circle, Package, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Conversation {
@@ -22,8 +22,23 @@ export default function AdminChatPanel() {
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sendError, setSendError] = useState('');
+  const [showProductMenu, setShowProductMenu] = useState(false);
+  const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [attachedProduct, setAttachedProduct] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchCatalogProducts = async () => {
+      try {
+        const { data } = await supabase.from('products').select('id, name, price, image').limit(20);
+        if (data) setCatalogProducts(data);
+      } catch (e) {
+        console.warn(e);
+      }
+    };
+    fetchCatalogProducts();
+  }, []);
 
   const fetchConversations = useCallback(async () => {
     setIsLoading(true);
@@ -121,16 +136,24 @@ export default function AdminChatPanel() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser || isSending) return;
+    if ((!newMessage.trim() && !attachedProduct) || !selectedUser || isSending) return;
 
-    const msg = newMessage.trim();
+    const textMsg = newMessage.trim();
+    let finalMsg = textMsg;
+
+    if (attachedProduct) {
+      finalMsg = `[PRODUCT|${attachedProduct.id}|${attachedProduct.name}|${attachedProduct.image}|${attachedProduct.price}]:::${textMsg}`;
+    }
+
     setNewMessage('');
+    setAttachedProduct(null);
+    setShowProductMenu(false);
     
     // Optimistic UI
     const optimisticMsg = {
       id: 'temp-' + Date.now(),
       sender_role: 'ADMIN',
-      content: msg,
+      content: finalMsg,
       created_at: new Date().toISOString(),
       is_read: false,
     };
@@ -145,7 +168,7 @@ export default function AdminChatPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sender_role: 'ADMIN',
-          content: msg,
+          content: finalMsg,
           user_id: selectedUser.user_id,
           user_name: selectedUser.user_name,
           product_id: selectedUser.user_id,
@@ -164,7 +187,7 @@ export default function AdminChatPanel() {
     } catch (e: any) {
       console.warn('Failed to send message', e);
       setSendError(e.message || 'Gagal mengirim pesan');
-      setNewMessage(msg);
+      setNewMessage(textMsg);
       setTimeout(() => setSendError(''), 4000);
     } finally {
       setIsSending(false);
@@ -257,7 +280,14 @@ export default function AdminChatPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-xs text-slate-800 truncate">{conv.user_name}</span>
-                    <span className="text-[9px] text-slate-400 shrink-0">{formatTime(conv.last_message_at)}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {conv.unread > 0 && (
+                        <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                          {conv.unread}
+                        </span>
+                      )}
+                      <span className="text-[9px] text-slate-400">{formatTime(conv.last_message_at)}</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 mt-0.5">
                     {conv.last_sender === 'ADMIN' && (
@@ -313,7 +343,29 @@ export default function AdminChatPanel() {
                         : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm'
                     }`}
                   >
-                    {msg.content}
+                    {msg.content.startsWith('[PRODUCT|') ? (
+                      (() => {
+                        const [prodStr, textStr] = msg.content.split(':::');
+                        const parts = prodStr.split('|');
+                        const pName = parts[2];
+                        const pImg = parts[3];
+                        const pPrice = parts[4]?.replace(']', '');
+                        return (
+                          <div className="flex flex-col gap-2">
+                            <div className={`flex items-center gap-3 p-2 rounded-xl border ${msg.sender_role === 'ADMIN' ? 'bg-white/20 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-slate-800'}`}>
+                              {pImg && <img src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover bg-white shrink-0" />}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-[11px] leading-tight mb-0.5 truncate">{pName || 'Produk'}</p>
+                                <p className="text-[10px] font-semibold opacity-90">Rp {Number(pPrice || 0).toLocaleString('id-ID')}</p>
+                              </div>
+                            </div>
+                            {textStr && <p className="text-xs break-words">{textStr}</p>}
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <p className="break-words">{msg.content}</p>
+                    )}
                   </div>
                   <span className="text-[9px] text-slate-400 mt-1 px-1">
                     {new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -324,23 +376,73 @@ export default function AdminChatPanel() {
             </div>
 
             {/* Input */}
-            <form onSubmit={sendMessage} className="p-4 bg-white border-t border-slate-100 flex flex-col gap-1 shrink-0">
-              {sendError && (
-                <p className="text-[10px] text-red-500 font-semibold px-1">{sendError}</p>
+            <div className="relative">
+              {showProductMenu && catalogProducts.length > 0 && (
+                <div className="absolute bottom-full left-4 mb-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                  {catalogProducts.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                      setAttachedProduct(p);
+                      setShowProductMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-3 border-b border-slate-50 cursor-pointer"
+                    >
+                      <img src={p.image} alt={p.name} className="w-8 h-8 rounded-lg object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold text-slate-800 truncate">{p.name}</p>
+                        <p className="text-[9px] text-pink-500 font-semibold">Rp {Number(p.price).toLocaleString('id-ID')}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
-              <div className="flex gap-2">
-                <input
+            
+            {attachedProduct && (
+              <div className="px-4 pt-4 pb-1 bg-white border-t border-slate-100">
+                <div className="flex items-center gap-3 p-2 bg-pink-50 border border-pink-100 rounded-xl relative pr-8 max-w-sm">
+                  <img src={attachedProduct.image} alt={attachedProduct.name} className="w-10 h-10 rounded-lg object-cover bg-white shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-[11px] text-slate-800 truncate">{attachedProduct.name}</p>
+                    <p className="text-[10px] font-semibold text-pink-500">Rp {Number(attachedProduct.price).toLocaleString('id-ID')}</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setAttachedProduct(null)} 
+                    className="absolute top-2 right-2 p-1 bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={sendMessage} className="p-4 bg-white border-t-0 flex flex-col gap-1 shrink-0">
+                {sendError && (
+                  <p className="text-[10px] text-red-500 font-semibold px-1">{sendError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductMenu(!showProductMenu)}
+                    className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-xl transition-all shrink-0 cursor-pointer flex items-center justify-center"
+                    title="Kirim Produk"
+                  >
+                    <Package className="w-4 h-4" />
+                  </button>
+                  <input
                   ref={inputRef}
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Ketik balasan..."
+                  placeholder={attachedProduct ? "Ketik pesan untuk produk ini..." : "Ketik balasan..."}
                   disabled={isSending}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || isSending}
+                  disabled={(!newMessage.trim() && !attachedProduct) || isSending}
                   className="px-4 py-2.5 bg-gradient-to-br from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 disabled:from-slate-200 disabled:to-slate-200 text-white disabled:text-slate-400 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer active:scale-95 flex items-center gap-2"
                 >
                   {isSending ? (
@@ -352,6 +454,7 @@ export default function AdminChatPanel() {
                 </button>
               </div>
             </form>
+            </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
