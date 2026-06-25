@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import Header from "@/components/Header";
+import { ChatWidget } from "@/components/ChatWidget";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -20,6 +23,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Boneka Simoengil | Temukan Teman Peluk Pertamamu!",
   description: "Toko boneka & plushie premium online. Bahan 100% dacron premium grade A, washable, hypoallergenic, cocok untuk anak-anak & kado istimewa.",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -36,8 +40,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${poppins.variable} ${inter.variable} scroll-smooth h-full`} data-scroll-behavior="smooth">
-      <body className="min-h-full flex flex-col font-sans text-[#2C2C2C] antialiased selection:bg-pink-100 selection:text-pink-600 relative overflow-x-hidden">
+    <html lang="id" className={`${poppins.variable} ${inter.variable} scroll-smooth`} data-scroll-behavior="smooth">
+      <body className="min-h-screen flex flex-col font-sans text-[#2C2C2C] antialiased selection:bg-pink-100 selection:text-pink-600 relative overflow-x-clip">
         
         {/* Midtrans Snap JS SDK */}
         <Script
@@ -75,10 +79,15 @@ export default function RootLayout({
           <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-white/40 blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[35vw] h-[35vw] rounded-full bg-[#FFB6C8]/10 blur-3xl" />
         </div>
+
+        <Header />
+        
         {/* Main Content */}
-        <div className="relative z-10 flex-1 flex flex-col">
+        <div className="relative z-10 flex-1 flex flex-col pt-24">
           {children}
         </div>
+        <PWAInstallPrompt />
+        <ChatWidget />
       </body>
     </html>
   );

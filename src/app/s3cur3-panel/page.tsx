@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Lock, Mail, KeyRound, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function AdminLoginPage() {
+export default function SecureAdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +26,14 @@ export default function AdminLoginPage() {
 
       if (error) {
         throw new Error(error.message);
+      }
+
+      // Explicitly check for admin role
+      const userRole = data.user?.user_metadata?.role;
+      if (userRole !== 'admin') {
+        // Log them out immediately if they are not an admin
+        await supabase.auth.signOut();
+        throw new Error('Akses ditolak: Anda tidak memiliki hak akses sebagai admin.');
       }
 
       // Successful login redirect
@@ -57,7 +65,7 @@ export default function AdminLoginPage() {
             <Lock className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Admin Portal</h1>
-          <p className="text-slate-400 text-xs mt-1 font-medium">Masuk untuk mengelola katalog Boneka Simoengil</p>
+          <p className="text-slate-400 text-xs mt-1 font-medium">Sistem Keamanan Tingkat Lanjut</p>
         </div>
 
         {/* Login Card */}
@@ -124,10 +132,10 @@ export default function AdminLoginPage() {
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Memverifikasi...</span>
+                  <span>Memverifikasi Akses...</span>
                 </>
               ) : (
-                <span>Masuk sebagai Admin</span>
+                <span>Masuk Sistem</span>
               )}
             </button>
           </form>

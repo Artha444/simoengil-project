@@ -36,6 +36,7 @@ function CheckoutContent() {
   // Core states
   const [user, setUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedVariantSize, setSelectedVariantSize] = useState<string | null>(initialVariant);
@@ -72,10 +73,11 @@ function CheckoutContent() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setIsAuthOpen(true);
+        router.push('/?auth=true');
       } else {
         setUser(session.user);
         setName(session.user.user_metadata?.full_name || '');
+        setIsCheckingAuth(false);
       }
     };
     checkUser();
@@ -84,9 +86,10 @@ function CheckoutContent() {
       if (session) {
         setUser(session.user);
         setName(session.user.user_metadata?.full_name || '');
+        setIsCheckingAuth(false);
       } else {
         setUser(null);
-        setIsAuthOpen(true);
+        router.push('/?auth=true');
       }
     });
 
@@ -336,7 +339,7 @@ function CheckoutContent() {
   // 7. Place Order and Trigger Midtrans Snap
   const handlePayment = async () => {
     if (!user) {
-      setIsAuthOpen(true);
+      router.push('/?auth=true');
       return;
     }
 
@@ -495,7 +498,7 @@ function CheckoutContent() {
     }
   };
 
-  if (isLoadingProduct) {
+  if (isCheckingAuth || isLoadingProduct) {
     return (
       <div className="min-h-screen bg-[#FFF8F3] flex flex-col items-center justify-center p-4">
         <div className="w-12 h-12 border-4 border-[#FFB6C8]/30 border-t-[#FF8FB1] rounded-full animate-spin" />
@@ -511,7 +514,7 @@ function CheckoutContent() {
           <div className="w-20 h-20 rounded-full bg-[#FFF5F0] flex items-center justify-center border border-[#FFB6C8]/25 mx-auto text-3xl">🧸</div>
           <h1 className="text-xl font-black text-[#2C2C2C] font-heading">{isCartMode ? 'Keranjang Kosong' : 'Produk Tidak Ditemukan'}</h1>
           <p className="text-sm text-slate-500">{isCartMode ? 'Keranjang belanja Anda kosong. Tambahkan boneka ke keranjang terlebih dahulu.' : 'Pilih boneka dari katalog terlebih dahulu sebelum membeli.'}</p>
-          <Link href="/" className="block w-full py-3 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white rounded-xl font-bold text-sm text-center">
+          <Link href="/products" className="block w-full py-3 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white rounded-xl font-bold text-sm text-center">
             Kembali ke Toko
           </Link>
         </div>
@@ -618,7 +621,7 @@ function CheckoutContent() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/" className="flex-1 py-4 bg-[#FF8FB1] hover:bg-[#ff7a9f] text-white rounded-2xl font-black text-xs sm:text-sm text-center shadow-md shadow-pink-200 transition-all">
+            <Link href="/products" className="flex-1 py-4 bg-[#FF8FB1] hover:bg-[#ff7a9f] text-white rounded-2xl font-black text-xs sm:text-sm text-center shadow-md shadow-pink-200 transition-all">
               Belanja Lagi
             </Link>
             <a 
@@ -636,12 +639,12 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 md:py-16">
       
       {/* Return link */}
       <div className="mb-8">
         <Link 
-          href={isCartMode ? '/' : `/product/${product?.id}`}
+          href={isCartMode ? '/products' : `/product/${product?.id}`}
           className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#FF8FB1] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -1097,7 +1100,10 @@ function CheckoutContent() {
 
       <AuthModal
         isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        onClose={() => {
+          setIsAuthOpen(false);
+          router.push('/?auth=true');
+        }}
         onSuccess={() => {
           setIsAuthOpen(false);
         }}

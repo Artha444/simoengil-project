@@ -9,11 +9,13 @@ interface ProductCardProps {
   product: Product;
   cartItemCount: number;
   onDetailClick: (product: Product) => void;
+  index?: number;
 }
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   cartItemCount,
   onDetailClick,
+  index = 0,
 }) => {
   // Format price to IDR
   const formatIDR = (num: number) => {
@@ -85,10 +87,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div className="group relative bg-white rounded-2xl sm:rounded-[2.2rem] p-2 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2.5 transition-all duration-500 flex flex-col justify-between border border-slate-100 hover:border-slate-200">
+    <div 
+      className="group relative bg-white rounded-2xl sm:rounded-[2.2rem] p-2 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2.5 transition-all duration-500 flex flex-col justify-between border border-slate-100 hover:border-slate-200 animate-in fade-in zoom-in slide-in-from-bottom-4 fill-mode-both"
+      style={{ animationDuration: '700ms', animationDelay: `${index * 100}ms` }}
+    >
       {/* Badge Removed per request */}
-
-
 
       <div>
         {/* Product Image */}
@@ -125,15 +128,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <p className="font-black text-[#2C2C2C] text-base sm:text-xl mb-3 sm:mb-5">
           {getPriceDisplay()}
         </p>
+        
       </div>
 
       {/* Action Buttons */}
-      <div className="space-y-2 mt-auto">
+      <div className="space-y-2 mt-auto w-full">
         <Link
           href={`/product/${product.id}`}
-          className="w-full py-3 px-4 bg-[#0F4C5C] hover:bg-[#0B3A46] text-white rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_15px_rgba(15,76,92,0.2)] flex items-center justify-center cursor-pointer text-center"
+          className="w-full py-2.5 sm:py-3 px-2 sm:px-4 bg-[#0F4C5C] hover:bg-[#0B3A46] text-white rounded-xl sm:rounded-2xl text-[11px] sm:text-xs md:text-sm font-black transition-all duration-300 hover:scale-[1.01] active:scale-95 shadow-[0_4px_15px_rgba(15,76,92,0.2)] flex items-center justify-center cursor-pointer text-center whitespace-nowrap overflow-hidden text-ellipsis"
         >
-          <span>Lihat Detail & Varian</span>
+          <span>Lihat Detail</span>
         </Link>
       </div>
     </div>

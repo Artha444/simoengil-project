@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, AlertCircle, Heart, Sparkles, Smile, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { lockBodyScroll } from '@/lib/scrollLock';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -24,11 +25,15 @@ export default function AuthModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      // Reset state
+      lockBodyScroll(true, 'auth');
+      setIsRendered(true);
+      setTimeout(() => setIsVisible(true), 10);
+      
       setEmail('');
       setPassword('');
       setName('');
@@ -36,14 +41,20 @@ export default function AuthModal({
       setInfoMsg(null);
       setMode(initialMode);
     } else {
-      document.body.style.overflow = 'unset';
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsRendered(false);
+        lockBodyScroll(false, 'auth');
+      }, 300);
+      return () => clearTimeout(timer);
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen, initialMode]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    return () => lockBodyScroll(false, 'auth');
+  }, []);
+
+  if (!isRendered) return null;
 
   const getRedirectUrl = () => {
     let url =
@@ -129,12 +140,12 @@ export default function AuthModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-[#0A0F1D]/45 backdrop-blur-xs transition-opacity duration-300"
+        className={`absolute inset-0 bg-[#0A0F1D]/45 backdrop-blur-xs transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-pink-100/50 flex flex-col transition-all duration-300 transform scale-100 animate-in fade-in zoom-in-95 duration-200">
+      <div className={`relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-pink-100/50 flex flex-col transition-all duration-300 transform ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-8'}`}>
         
         {/* Decorative Top Border */}
         <div className="h-2 w-full bg-gradient-to-r from-pink-300 via-pink-400 to-amber-300" />

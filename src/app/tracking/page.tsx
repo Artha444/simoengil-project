@@ -67,14 +67,7 @@ export default function TrackingPage() {
     <div className="min-h-screen bg-[#FFF8F3] font-sans selection:bg-[#FF8FB1]/30 pb-20">
       
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#0A0F1D] text-white shadow-md">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center gap-4">
-          <Link href="/" className="p-2 -ml-2 rounded-xl hover:bg-white/10 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </Link>
-          <h1 className="text-sm font-bold font-heading">Lacak Pesanan Simoengil</h1>
-        </div>
-      </header>
+      
 
       <main className="max-w-3xl mx-auto px-4 pt-8">
         
@@ -221,3 +214,4 @@ export default function TrackingPage() {
     </div>
   );
 }
+

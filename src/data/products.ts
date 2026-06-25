@@ -61,6 +61,7 @@ export interface Product {
   shopeeLink: string;
   shopeePrice?: number;
   shopeeAvailable?: boolean;
+  originalPrice?: number;
   images?: string[];
   specifications: ProductSpecification;
   variants?: ProductVariant[];

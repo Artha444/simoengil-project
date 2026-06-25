@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { lockBodyScroll } from '@/lib/scrollLock';
 
 interface OrderTrackingModalProps {
   isOpen: boolean;
@@ -12,6 +13,11 @@ export function OrderTrackingModal({ isOpen, onClose }: OrderTrackingModalProps)
   const [isLoading, setIsLoading] = useState(false);
   const [orderData, setOrderData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    lockBodyScroll(isOpen, 'tracking');
+    return () => lockBodyScroll(false, 'tracking');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

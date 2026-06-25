@@ -1,0 +1,21 @@
+{
+  "name": "Boneka Simoengil",
+  "short_name": "Simoengil",
+  "description": "Toko boneka & plushie premium online.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F3",
+  "theme_color": "#FF8FB1",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ] 
+}

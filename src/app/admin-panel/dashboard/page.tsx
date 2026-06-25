@@ -1,18 +1,16 @@
 'use client';
-import { MessageSquare } from 'lucide-react';
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { PRODUCTS, Product, ProductVariant, ProductType, ProductSize, ProductFeature } from '@/data/products';
+import { PRODUCTS, Product, ProductType, ProductSize, ProductFeature } from '@/data/products';
 import { 
   Plus, 
   Trash2, 
   Edit, 
   Save, 
-  Undo, 
   LayoutDashboard, 
   ShoppingBag, 
   LogOut, 
@@ -22,8 +20,11 @@ import {
   PlusCircle,
   Upload,
   Menu,
-  X
+  X,
+  RefreshCw,
+  MessageSquare
 } from 'lucide-react';
+import AdminChatPanel from '@/components/AdminChatPanel';
 
 const getShippingDetails = (shippingAddress: any) => {
   if (!shippingAddress) return { name: 'Pelanggan', phone: '-', addressStr: '-' };
@@ -55,7 +56,7 @@ const getShippingDetails = (shippingAddress: any) => {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -63,8 +64,7 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [orderMessages, setOrderMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+
 
   // Helper: fetch orders from Supabase
   const fetchOrders = async () => {
@@ -80,41 +80,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Helper: fetch messages for a specific order (or product)
-  const fetchMessages = async (orderId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('product_id', orderId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      setOrderMessages(data || []);
-    } catch (err) {
-      console.warn('Failed to fetch messages', err);
-    }
-  };
-
-  // Helper: send a new message (admin side)
-  const sendMessage = async (orderId: string) => {
-    if (!newMessage.trim()) return;
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sender_role: 'ADMIN',
-          content: newMessage.trim(),
-          product_id: orderId
-        })
-      });
-      if (!res.ok) throw new Error('Failed to send message');
-      setNewMessage('');
-      await fetchMessages(orderId);
-    } catch (err) {
-      console.warn('Failed to send message', err);
-    }
-  };
 
   // Helper: update order status and tracking number
   const updateOrder = async (orderId: string, status: string, trackingNumber?: string) => {
@@ -132,6 +97,7 @@ export default function AdminDashboardPage() {
 
   // Form States
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Boneka Beruang');
@@ -151,6 +117,10 @@ export default function AdminDashboardPage() {
   const [shopeeLink, setShopeeLink] = useState('');
   const [shopeePrice, setShopeePrice] = useState('');
 
+  // Shopee auto-fetch states
+  const [isFetchingShopee, setIsFetchingShopee] = useState(false);
+  const [shopeeFetchError, setShopeeFetchError] = useState<string | null>(null);
+
   // Platform Availability Checks (Default to true)
   const [shopeeAvailable, setShopeeAvailable] = useState<boolean>(true);
 
@@ -159,15 +129,15 @@ export default function AdminDashboardPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
   // Tab State
-  const [activeTab, setActiveTab] = useState<'katalog' | 'halaman' | 'pesanan'>('katalog');
+  const [activeTab, setActiveTab] = useState<'katalog' | 'halaman' | 'pesanan' | 'chat'>('katalog');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Site Settings States
-  const [siteSettings, setSiteSettings] = useState<any>({});
   
   // Effect: load orders when admin switches to "pesanan" tab
   useEffect(() => {
     if (activeTab === 'pesanan') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchOrders();
     }
   }, [activeTab]);
@@ -187,6 +157,7 @@ export default function AdminDashboardPage() {
   const [whyTitle, setWhyTitle] = useState('');
   const [whyFeatures, setWhyFeatures] = useState<any[]>([]);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<any>({});
 
   // Additional Images & Features state
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
@@ -198,6 +169,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (products.length > 0) {
       const existingCats = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoriesList(prev => Array.from(new Set([...prev, ...existingCats])));
     }
   }, [products]);
@@ -208,21 +180,26 @@ export default function AdminDashboardPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          // If supabase url is dummy, we allow accessing dashboard for demonstration purposes in local development
-          const isDummyUrl = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('dummy-project-id');
-          if (isDummyUrl) {
-            console.log('Using dummy Supabase URL. Bypassing auth guard for preview mode.');
-            setIsAuthenticated(true);
-          } else {
-            setIsAuthenticated(false);
-            router.push('/secret-login');
-          }
-        } else {
-          setIsAuthenticated(true);
+          // Not logged in
+          setIsAuthenticated(false);
+          router.push('/s3cur3-panel');
+          return;
         }
+
+        // Check for admin role
+        const userRole = session.user?.user_metadata?.role;
+        if (userRole !== 'admin') {
+          console.warn('Unauthorized access attempt: User is not an admin.');
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+          router.push('/s3cur3-panel');
+          return;
+        }
+
+        setIsAuthenticated(true);
       } catch (err) {
         setIsAuthenticated(false);
-        router.push('/secret-login');
+        router.push('/s3cur3-panel');
       }
     };
     checkAuth();
@@ -399,10 +376,51 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchProducts();
       fetchSettings();
     }
   }, [isAuthenticated]);
+
+  // Auto-fetch Shopee data when URL changes
+  useEffect(() => {
+    if (!shopeeLink || !shopeeLink.includes('shopee.co.id') || !shopeeAvailable) return;
+
+    const timer = setTimeout(async () => {
+      setIsFetchingShopee(true);
+      setShopeeFetchError(null);
+
+      try {
+        const res = await fetch('/api/shopee-scraper', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shopeeUrl: shopeeLink }),
+        });
+        const result = await res.json();
+
+        if (result.success && result.data) {
+          const d = result.data;
+          if (d.rating) setRating(String(d.rating));
+          if (d.reviewsCount) setReviewsCount(String(d.reviewsCount));
+          if (d.soldCount) setSoldCount(String(d.soldCount));
+          if (d.price) setShopeePrice(String(d.price));
+          if (d.name) setName(d.name);
+          setShopeeAvailable(true);
+          if (result.partial) {
+            setShopeeFetchError('Auto-fetch tidak bisa ambil data dari Shopee. Field diisi dari URL, silakan edit manual.');
+          }
+        } else {
+          setShopeeFetchError(`Gagal: ${result.errors?.join(', ') || 'Unknown error'}`);
+        }
+      } catch {
+        setShopeeFetchError('Gagal auto-fetch');
+      } finally {
+        setIsFetchingShopee(false);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [shopeeLink, shopeeAvailable]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,6 +460,7 @@ export default function AdminDashboardPage() {
 
   // Form Reset
   const resetForm = () => {
+    setIsProductModalOpen(false);
     setEditingId(null);
     setName('');
     setPrice('');
@@ -458,6 +477,8 @@ export default function AdminDashboardPage() {
     setShopeeLink('');
     setShopeePrice('');
     setShopeeAvailable(true);
+    setIsFetchingShopee(false);
+    setShopeeFetchError(null);
     setAdditionalImages([]);
     setFeatures([]);
     setSoldCount('0');
@@ -666,6 +687,7 @@ export default function AdminDashboardPage() {
 
   // Select Product for editing
   const handleEditProduct = (p: Product) => {
+    setIsProductModalOpen(true);
     setEditingId(p.id);
     setName(p.name);
     setPrice(String(p.price));
@@ -698,7 +720,7 @@ export default function AdminDashboardPage() {
   // Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/secret-login');
+    router.push('/s3cur3-panel');
   };
 
   // Loading Screen
@@ -790,6 +812,17 @@ export default function AdminDashboardPage() {
               <Sparkles className="w-4 h-4" />
               <span>Pengaturan Halaman</span>
             </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-extrabold transition-colors border cursor-pointer ${
+                activeTab === 'chat' 
+                  ? 'bg-pink-50 text-pink-600 border-pink-100/50' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-transparent'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Live Chat</span>
+            </button>
             
             <div className="pt-2 border-t border-slate-100">
               <Link
@@ -816,19 +849,21 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 p-4 lg:p-10 overflow-y-auto max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-3 lg:p-6 overflow-y-auto w-full">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight">
-              {activeTab === 'katalog' ? 'Kelola Katalog Boneka' : activeTab === 'pesanan' ? 'Kelola Pesanan Masuk' : 'Pengaturan Halaman (CMS)'}
+              {activeTab === 'katalog' ? 'Kelola Katalog Boneka' : activeTab === 'pesanan' ? 'Kelola Pesanan Masuk' : activeTab === 'chat' ? 'Live Chat' : 'Pengaturan Halaman (CMS)'}
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm font-medium mt-1">
               {activeTab === 'katalog' 
                 ? 'Tambah, ubah, atau hapus daftar boneka dan kelola varian harga e-commerce.'
                 : activeTab === 'pesanan'
                 ? 'Pantau pesanan masuk dan update status pengiriman.'
+                : activeTab === 'chat'
+                ? 'Balas pesan dari pelanggan secara real-time.'
                 : 'Ubah teks dan ikon yang muncul di halaman utama website.'}
             </p>
           </div>
@@ -843,16 +878,28 @@ export default function AdminDashboardPage() {
 
         {/* TAB CONTENT */}
         {activeTab === 'katalog' ? (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
           
-          {/* COLUMN 1: PRODUCT LIST TABLE (SPAN 7) */}
-          <section className="xl:col-span-7 space-y-6">
+          {/* COLUMN 1: PRODUCT LIST TABLE */}
+          <section className="xl:col-span-12 space-y-3">
             <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <h3 className="font-extrabold text-sm text-slate-700 flex items-center gap-2">
-                  <List className="w-4 h-4 text-slate-500" />
-                  Daftar Boneka Aktif ({products.length})
-                </h3>
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="font-extrabold text-sm text-slate-700 flex items-center gap-2">
+                    <List className="w-4 h-4 text-slate-500" />
+                    Daftar Boneka Aktif ({products.length})
+                  </h3>
+                  <button 
+                    onClick={() => {
+                      resetForm();
+                      setIsProductModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Tambah Baru
+                  </button>
+                </div>
                 {isFetching && (
                   <span className="text-[10px] text-slate-400 font-semibold animate-pulse">Menyinkronkan...</span>
                 )}
@@ -863,11 +910,10 @@ export default function AdminDashboardPage() {
                 <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/30">
-                      <th className="py-4 px-5">Boneka</th>
-                      <th className="py-4 px-5">Kategori</th>
-                      <th className="py-4 px-5">Harga Dasar</th>
-                      <th className="py-4 px-5">Status / Varian</th>
-                      <th className="py-4 px-5 text-right">Aksi</th>
+                      <th className="py-2.5 px-4">Boneka</th>
+                      <th className="py-2.5 px-4">Kategori</th>
+                      <th className="py-2.5 px-4">Harga Dasar</th>
+                      <th className="py-2.5 px-4 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
@@ -881,40 +927,25 @@ export default function AdminDashboardPage() {
                       products.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                           {/* Doll Item Info */}
-                          <td className="py-4 px-5 flex items-center gap-3">
-                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
-                              <Image src={p.image} alt={p.name} fill className="object-cover" />
+                          <td className="py-2.5 px-4 flex items-center gap-2.5">
+                            <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
+                              <Image src={p.image} alt={p.name} fill sizes="32px" className="object-cover" />
                             </div>
                             <span className="font-bold text-slate-800 line-clamp-1">{p.name}</span>
                           </td>
 
                           {/* Category */}
-                          <td className="py-4 px-5 font-semibold text-slate-500">
+                          <td className="py-2.5 px-4 font-semibold text-slate-500">
                             {p.category}
                           </td>
 
                           {/* Base Price */}
-                          <td className="py-4 px-5 font-extrabold text-slate-700">
+                          <td className="py-2.5 px-4 font-extrabold text-slate-700">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.price)}
                           </td>
 
-                          {/* Status and Variants count */}
-                          <td className="py-4 px-5 space-y-1">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                              p.status === 'Best Seller' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
-                              p.status === 'Stok Terbatas' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                              p.status === 'Baru' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                              'bg-blue-50 text-blue-600 border border-blue-100'
-                            }`}>
-                              {p.status}
-                            </span>
-                            <span className="block text-[10px] text-slate-400 font-medium">
-                              {p.variants?.length || 0} ukuran varian
-                            </span>
-                          </td>
-
                           {/* Actions */}
-                          <td className="py-4 px-5 text-right space-x-1.5">
+                          <td className="py-2.5 px-4 text-right space-x-1.5">
                             <button
                               onClick={() => handleEditProduct(p)}
                               className="p-2 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-500 rounded-lg transition-colors cursor-pointer"
@@ -939,32 +970,34 @@ export default function AdminDashboardPage() {
             </div>
           </section>
 
-          {/* COLUMN 2: DYNAMIC PRODUCT FORM (SPAN 5) */}
-          <section className="xl:col-span-5">
-            <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm p-6 space-y-6">
+          {/* PRODUCT MODAL FORM */}
+          {isProductModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 sm:p-6 backdrop-blur-sm">
+            <div className="relative w-full max-w-3xl animate-in fade-in zoom-in-95 duration-200">
+              {/* Close Button Outside */}
+              <button 
+                onClick={() => setIsProductModalOpen(false)} 
+                className="absolute -top-12 right-0 md:-right-12 md:top-0 p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white cursor-pointer transition-colors z-10"
+                title="Tutup Form"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-2xl p-4 space-y-4 w-full max-h-[90vh] overflow-y-auto">
               
               {/* Form Title */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
                   <PlusCircle className="w-4 h-4 text-pink-500" />
                   {editingId ? 'Simpan Perubahan Boneka' : 'Tambah Boneka Baru'}
                 </h3>
-                {editingId && (
-                  <button
-                    onClick={resetForm}
-                    className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 px-2 py-1 rounded-lg transition-all"
-                  >
-                    <Undo className="w-3 h-3" />
-                    <span>Batal Edit</span>
-                  </button>
-                )}
               </div>
 
               {/* Form inputs */}
-              <form onSubmit={handleSaveProduct} className="space-y-4">
+              <form onSubmit={handleSaveProduct} className="space-y-3">
                 
                 {/* Product Name */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                     Nama Boneka
                   </label>
@@ -1050,7 +1083,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Rating & Ulasan & Terjual */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Bintang / Rating
@@ -1096,7 +1129,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Image URL & Status Tag */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Gambar Utama Produk
@@ -1139,7 +1172,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Foto Tambahan Produk */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Foto Tambahan Produk (Gallery)
@@ -1209,7 +1242,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Spesifikasi (Bahan & Dimensi) */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-2">
                     Spesifikasi & Bahan Premium
                   </span>
@@ -1238,7 +1271,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Kelebihan Produk */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Kelebihan Boneka Simoengil
@@ -1311,7 +1344,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Testimoni Pelanggan */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Testimoni Pelanggan
@@ -1401,7 +1434,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Description */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                     Deskripsi Boneka
                   </label>
@@ -1416,7 +1449,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* MARKETPLACE LINKS & PRICES FOR BASE PRODUCT */}
-                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                     Link & Harga Dasar Marketplace
                   </span>
@@ -1437,17 +1470,65 @@ export default function AdminDashboardPage() {
                   {/* Shopee Link & Price */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-orange-500 block">
+                      <label className="text-[9px] font-bold text-orange-500 block flex items-center gap-2">
                         Shopee Link
+                        {isFetchingShopee && (
+                          <RefreshCw className="w-3 h-3 animate-spin text-orange-400" />
+                        )}
+                        {shopeeFetchError && (
+                          <span className="text-[8px] text-rose-400 font-normal">{shopeeFetchError}</span>
+                        )}
                       </label>
-                      <input
-                        type="text"
-                        placeholder="https://shopee.co.id/..."
-                        value={shopeeLink}
-                        onChange={(e) => setShopeeLink(e.target.value)}
-                        disabled={!shopeeAvailable}
-                        className="w-full px-2 py-1.5 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                      />
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          placeholder="https://shopee.co.id/..."
+                          value={shopeeLink}
+                          onChange={(e) => setShopeeLink(e.target.value)}
+                          disabled={!shopeeAvailable || isFetchingShopee}
+                          className="flex-1 px-2 py-1.5 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!shopeeLink) return;
+                            setIsFetchingShopee(true);
+                            setShopeeFetchError(null);
+                            try {
+                              const res = await fetch('/api/shopee-scraper', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ shopeeUrl: shopeeLink }),
+                              });
+                              const result = await res.json();
+                              if (result.success && result.data) {
+                                const d = result.data;
+                                if (d.rating) setRating(String(d.rating));
+                                if (d.reviewsCount) setReviewsCount(String(d.reviewsCount));
+                                if (d.soldCount) setSoldCount(String(d.soldCount));
+                                if (d.price) setShopeePrice(String(d.price));
+                                if (d.name) setName(d.name);
+                                setShopeeAvailable(true);
+                                if (result.partial) {
+                                  setShopeeFetchError('Sync: hanya nama dari URL, data lainnya isi manual.');
+                                }
+                              } else {
+                                setShopeeFetchError(result.error || `Gagal: ${result.errors?.join(', ') || 'Unknown'}`);
+                              }
+                            } catch {
+                              setShopeeFetchError('Gagal sync');
+                            } finally {
+                              setIsFetchingShopee(false);
+                            }
+                          }}
+                          disabled={!shopeeAvailable || isFetchingShopee || !shopeeLink}
+                          className="shrink-0 px-2 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-orange-100 flex items-center gap-1"
+                          title="Sync data dari Shopee"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isFetchingShopee ? 'animate-spin' : ''}`} />
+                          <span>Sync</span>
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-orange-500 block">
@@ -1466,7 +1547,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* DYNAMIC TYPES SECTION */}
-                <div className="border-t border-slate-100 pt-4 space-y-3">
+                <div className="border-t border-slate-100 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Kelola Variasi (Warna/Model)
@@ -1557,7 +1638,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* DYNAMIC SIZES SECTION */}
-                <div className="border-t border-slate-100 pt-4 space-y-3">
+                <div className="border-t border-slate-100 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                       Kelola Ukuran
@@ -1636,14 +1717,15 @@ export default function AdminDashboardPage() {
                   )}
                 </button>
               </form>
-
             </div>
-          </section>
+            </div>
+          </div>
+          )}
 
         </div>
         ) : activeTab === 'pesanan' ? (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-            <section className="xl:col-span-7 space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+            <section className="xl:col-span-7 space-y-3">
               <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <h3 className="font-extrabold text-sm text-slate-700 flex items-center gap-2">
@@ -1658,11 +1740,11 @@ export default function AdminDashboardPage() {
                   <table className="w-full min-w-[600px] text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/30">
-                        <th className="py-4 px-5">ID Pesanan / Pembeli</th>
-                        <th className="py-4 px-5">Total Harga</th>
-                        <th className="py-4 px-5">Status</th>
-                        <th className="py-4 px-5">Resi</th>
-                        <th className="py-4 px-5 text-right">Aksi</th>
+                        <th className="py-2.5 px-4">ID Pesanan / Pembeli</th>
+                        <th className="py-2.5 px-4">Total Harga</th>
+                        <th className="py-2.5 px-4">Status</th>
+                        <th className="py-2.5 px-4">Resi</th>
+                        <th className="py-2.5 px-4 text-right">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs">
@@ -1675,14 +1757,14 @@ export default function AdminDashboardPage() {
                       ) : (
                         orders.map((o) => (
                           <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-4 px-5">
+                            <td className="py-2.5 px-4">
                               <span className="font-bold text-slate-800 block truncate w-32" title={o.id}>{o.id.split('-')[0].toUpperCase()}</span>
                               <span className="text-[10px] font-semibold text-slate-400">{getShippingDetails(o.shipping_address).name}</span>
                             </td>
-                            <td className="py-4 px-5 font-extrabold text-slate-700">
+                            <td className="py-2.5 px-4 font-extrabold text-slate-700">
                               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(o.total_price || o.total_amount || 0)}
                             </td>
-                            <td className="py-4 px-5">
+                            <td className="py-2.5 px-4">
                               <select 
                                 value={o.status || 'PENDING'} 
                                 onChange={(e) => updateOrder(o.id, e.target.value, o.tracking_number)}
@@ -1694,7 +1776,7 @@ export default function AdminDashboardPage() {
                                 <option value="CANCELED">CANCELED</option>
                               </select>
                             </td>
-                            <td className="py-4 px-5">
+                            <td className="py-2.5 px-4">
                               <input 
                                 type="text"
                                 placeholder="Input resi..."
@@ -1707,15 +1789,14 @@ export default function AdminDashboardPage() {
                                 className="w-24 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] focus:border-pink-400"
                               />
                             </td>
-                            <td className="py-4 px-5 text-right">
+                            <td className="py-2.5 px-4 text-right">
                               <button
                                 onClick={() => {
                                   setSelectedOrder(o);
-                                  fetchMessages(o.id);
                                 }}
                                 className="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-600 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
                               >
-                                Detail & Chat
+                                Detail
                               </button>
                             </td>
                           </tr>
@@ -1730,7 +1811,7 @@ export default function AdminDashboardPage() {
             {/* Detail & Chat (Span 5) */}
             <section className="xl:col-span-5">
               {selectedOrder ? (
-                <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm p-6 space-y-6 flex flex-col h-[600px]">
+                <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm p-4 space-y-3 flex flex-col h-[500px]">
                   <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                     <div>
                       <h3 className="font-extrabold text-sm text-slate-800">Detail Pesanan</h3>
@@ -1760,68 +1841,25 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Chat Section */}
-                  <div className="flex-1 flex flex-col min-h-0 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
-                    <div className="p-3 bg-pink-50 border-b border-pink-100 text-[10px] font-bold text-pink-600 flex items-center gap-2">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Live Chat dengan Pembeli
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-                      {orderMessages.length === 0 ? (
-                        <p className="text-center text-[10px] text-slate-400 italic m-auto">Belum ada percakapan.</p>
-                      ) : (
-                        orderMessages.map((msg, idx) => (
-                          <div key={idx} className={`flex flex-col ${msg.sender_role === 'ADMIN' ? 'items-end' : 'items-start'}`}>
-                            <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${msg.sender_role === 'ADMIN' ? 'bg-pink-500 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'}`}>
-                              {msg.content}
-                            </div>
-                            <span className="text-[8px] text-slate-400 mt-1">
-                              {new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    
-                    <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
-                      <input 
-                        type="text" 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Balas pembeli..."
-                        onKeyDown={(e) => e.key === 'Enter' && sendMessage(selectedOrder.id)}
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:border-pink-400 focus:outline-none"
-                      />
-                      <button 
-                        onClick={() => sendMessage(selectedOrder.id)}
-                        className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
-                      >
-                        Kirim
-                      </button>
-                    </div>
-                  </div>
-
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm h-[600px] flex items-center justify-center flex-col text-slate-400">
-                  <MessageSquare className="w-12 h-12 mb-3 text-slate-200" />
-                  <p className="text-xs font-medium">Pilih pesanan untuk melihat detail dan chat</p>
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-sm h-[500px] flex items-center justify-center flex-col text-slate-400">
+                  <p className="text-xs font-medium">Pilih pesanan untuk melihat detail</p>
                 </div>
               )}
             </section>
           </div>
         ) : (
-          <div className="max-w-3xl space-y-8">
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2 pb-4 border-b border-slate-100 mb-6">
+          <div className="max-w-3xl space-y-4">
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-sm">
+              <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
                 <Sparkles className="w-4 h-4 text-pink-500" />
                 Pengaturan Teks & Ikon Halaman Utama
               </h3>
-              <form onSubmit={handleSaveSettings} className="space-y-6">
+              <form onSubmit={handleSaveSettings} className="space-y-4">
                 
                 {/* Logo Section */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Logo & Identitas</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -1866,7 +1904,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Hero Section */}
-                <div className="space-y-4 pt-6 border-t border-slate-100">
+                <div className="space-y-3 pt-4 border-t border-slate-100">
                   <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Bagian Utama (Hero)</h4>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Judul Utama</label>
@@ -1917,7 +1955,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Why Section */}
-                <div className="space-y-4 pt-6 border-t border-slate-100">
+                <div className="space-y-3 pt-4 border-t border-slate-100">
                   <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Bagian &quot;Kenapa Memilih Kami&quot;</h4>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Judul Bagian</label>
@@ -1947,7 +1985,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center gap-4">
+                <div className="pt-3 border-t border-slate-100 flex items-center gap-3">
                   <button type="submit" disabled={isSavingSettings} className="w-full sm:w-auto px-6 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
                     {isSavingSettings ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Simpan Pengaturan
@@ -1957,6 +1995,10 @@ export default function AdminDashboardPage() {
               </form>
             </div>
           </div>
+        )}
+
+        {activeTab === 'chat' && (
+          <AdminChatPanel />
         )}
 
       </main>
