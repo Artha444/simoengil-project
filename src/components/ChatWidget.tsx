@@ -60,19 +60,22 @@ export function ChatWidget() {
       }
     });
 
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('header') && isOpenRef.current) {
-        setIsOpen(false);
-      }
+    const handleNavbarInteraction = () => {
+      if (isOpenRef.current) setIsOpen(false);
     };
-    window.addEventListener('click', handleGlobalClick);
+    window.addEventListener('navbar_interaction', handleNavbarInteraction);
 
     return () => {
       authListener?.subscription?.unsubscribe();
-      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('navbar_interaction', handleNavbarInteraction);
     };
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      window.dispatchEvent(new Event('chat_opened'));
+    }
+  }, [isOpen]);
 
   const fetchMessages = useCallback(async (pid: string, offset = 0, limit = 50) => {
     try {

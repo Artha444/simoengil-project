@@ -928,7 +928,7 @@ export default function Home() {
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
-                      className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-[#FF8FB1]" : ""}`}
+                      className={`w-5 h-5 shrink-0 text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-[#FF8FB1]" : ""}`}
                     />
                   </button>
 

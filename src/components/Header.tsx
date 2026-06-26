@@ -136,10 +136,16 @@ export default function Header() {
     localStorage.setItem("simoengil_cart", JSON.stringify(updated));
   };
 
-  // Close mobile menu when pathname changes
+  // Close mobile menu when pathname changes or chat opens
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handleChatOpened = () => setIsMobileMenuOpen(false);
+    window.addEventListener('chat_opened', handleChatOpened);
+    return () => window.removeEventListener('chat_opened', handleChatOpened);
+  }, []);
 
   const handleFaqClick = (e: React.MouseEvent) => {
     if (pathname === "/") {
@@ -162,6 +168,7 @@ export default function Header() {
   return (
     <>
       <motion.header
+        onClick={() => window.dispatchEvent(new Event('navbar_interaction'))}
         initial={{ y: "-100%" }}
         animate={{ y: isVisible ? "0%" : "-150%" }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
