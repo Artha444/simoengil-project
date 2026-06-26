@@ -13,6 +13,31 @@ interface Conversation {
   unread: number;
 }
 
+const getUserColor = (userId: string) => {
+  const colors = [
+    'from-red-400 to-red-500',
+    'from-orange-400 to-orange-500',
+    'from-amber-400 to-amber-500',
+    'from-green-400 to-green-500',
+    'from-emerald-400 to-emerald-500',
+    'from-teal-400 to-teal-500',
+    'from-cyan-400 to-cyan-500',
+    'from-blue-400 to-blue-500',
+    'from-indigo-400 to-indigo-500',
+    'from-violet-400 to-violet-500',
+    'from-purple-400 to-purple-500',
+    'from-fuchsia-400 to-fuchsia-500',
+    'from-rose-400 to-rose-500'
+  ];
+  if (!userId) return 'from-pink-400 to-pink-500';
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
 export default function AdminChatPanel() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUser, setSelectedUser] = useState<Conversation | null>(null);
@@ -26,6 +51,7 @@ export default function AdminChatPanel() {
   const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
   const [showProductMenu, setShowProductMenu] = useState(false);
   const [attachedProduct, setAttachedProduct] = useState<any | null>(null);
+  const [productSearch, setProductSearch] = useState('');
   
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -44,8 +70,8 @@ export default function AdminChatPanel() {
     fetchCatalogProducts();
   }, []);
 
-  const fetchConversations = useCallback(async () => {
-    setIsLoading(true);
+  const fetchConversations = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     try {
       const res = await fetch('/api/chat?action=conversations');
       const result = await res.json();
@@ -55,12 +81,12 @@ export default function AdminChatPanel() {
     } catch (e) {
       console.warn('Failed to fetch conversations', e);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchConversations();
+    fetchConversations(true);
 
     const globalChannel = supabase
       .channel('chat:admin:global')
@@ -69,12 +95,17 @@ export default function AdminChatPanel() {
         schema: 'public',
         table: 'messages'
       }, () => {
-        fetchConversations();
+        fetchConversations(false);
       })
       .subscribe();
 
+    const pollInterval = setInterval(() => {
+      fetchConversations(false);
+    }, 5000);
+
     return () => {
       supabase.removeChannel(globalChannel);
+      clearInterval(pollInterval);
     };
   }, [fetchConversations]);
 
@@ -84,7 +115,25 @@ export default function AdminChatPanel() {
       const result = await res.json();
       if (result.success) {
         if (offset === 0) {
-          setMessages(result.data);
+          setMessages(prev => {
+            // Merge carefully to avoid deleting optimistic temp- messages
+            const existingTemp = prev.filter(m => String(m.id).startsWith('temp-'));
+            const newMsgs = result.data;
+            return [...newMsgs, ...existingTemp];
+          });
+          
+          // Mark as read automatically if there are unread messages from USER
+          const hasUnread = result.data.some((m: any) => m.sender_role === 'USER' && !m.is_read);
+          if (hasUnread) {
+            fetch('/api/chat', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'mark_read', product_id: pid })
+            }).catch(console.warn);
+            
+            // Optimistically update conversations state
+            setConversations(prev => prev.map(c => c.user_id === pid ? { ...c, unread: 0 } : c));
+          }
         } else {
           setMessages(prev => {
             // filter duplicates just in case
@@ -176,8 +225,13 @@ export default function AdminChatPanel() {
     // Optimistically clear unread badge for this user
     setConversations(prev => prev.map(c => c.user_id === selectedUser.user_id ? { ...c, unread: 0 } : c));
 
+    const pollInterval = setInterval(() => {
+      fetchMessages(selectedUser.user_id);
+    }, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [selectedUser, fetchMessages]);
 
@@ -256,6 +310,10 @@ export default function AdminChatPanel() {
     conv.user_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredProducts = catalogProducts.filter(p => 
+    p.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -290,7 +348,7 @@ export default function AdminChatPanel() {
               </div>
             </div>
             <button
-              onClick={fetchConversations}
+              onClick={() => fetchConversations(true)}
               disabled={isLoading}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
               title="Refresh"
@@ -331,7 +389,7 @@ export default function AdminChatPanel() {
                   selectedUser?.user_id === conv.user_id ? 'bg-pink-50 border-l-2 border-l-pink-500' : ''
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center shrink-0">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getUserColor(conv.user_id)} flex items-center justify-center shrink-0`}>
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -371,7 +429,7 @@ export default function AdminChatPanel() {
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getUserColor(selectedUser.user_id)} flex items-center justify-center shrink-0`}>
                 <User className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -452,25 +510,41 @@ export default function AdminChatPanel() {
 
             {/* Input */}
             <div className="relative">
-              {showProductMenu && catalogProducts.length > 0 && (
-                <div className="absolute bottom-full left-4 mb-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
-                  {catalogProducts.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                      setAttachedProduct(p);
-                      setShowProductMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-3 border-b border-slate-50 cursor-pointer"
-                    >
-                      <img src={p.image} alt={p.name} className="w-8 h-8 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-slate-800 truncate">{p.name}</p>
-                        <p className="text-[9px] text-pink-500 font-semibold">Rp {Number(p.price).toLocaleString('id-ID')}</p>
-                      </div>
-                    </button>
-                  ))}
+              {showProductMenu && (
+                <div className="absolute bottom-full left-4 mb-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-10 flex flex-col">
+                  <div className="p-2 border-b border-slate-100">
+                    <input 
+                      type="text" 
+                      placeholder="Cari boneka..." 
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-pink-400"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredProducts.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setAttachedProduct(p);
+                          setShowProductMenu(false);
+                          setProductSearch('');
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-3 border-b border-slate-50 cursor-pointer"
+                      >
+                        <img src={p.image} alt={p.name} className="w-8 h-8 rounded-lg object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-slate-800 truncate">{p.name}</p>
+                          <p className="text-[9px] text-pink-500 font-semibold">Rp {Number(p.price).toLocaleString('id-ID')}</p>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredProducts.length === 0 && (
+                      <p className="text-[10px] text-slate-400 p-3 text-center">Boneka tidak ditemukan</p>
+                    )}
+                  </div>
                 </div>
               )}
             

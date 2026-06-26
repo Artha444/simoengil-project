@@ -14,12 +14,12 @@ export default function Hero3DBoneka() {
   const [hitbox, setHitbox] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="w-[82%] h-[82%] relative z-10 animate-float drop-shadow-[0_25px_35px_rgba(255,143,177,0.25)] flex items-center justify-center pointer-events-none">
+    <div className="w-[82%] h-[82%] relative z-10 animate-float drop-shadow-[0_25px_35px_rgba(255,143,177,0.25)] flex items-center justify-center">
       
       {/* Invisible Hitbox exactly the size of the model */}
       <div 
         ref={setHitbox} 
-        className="absolute w-[50%] h-[85%] z-20 pointer-events-auto cursor-grab active:cursor-grabbing rounded-[2rem]" 
+        className="absolute w-[50%] h-[85%] z-20 pointer-events-auto cursor-grab active:cursor-grabbing rounded-[2rem] ![touch-action:pan-y]" 
       />
 
       <Canvas 

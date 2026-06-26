@@ -545,14 +545,14 @@ export default function Home() {
           </div>
 
           <div
-            className="w-full lg:w-1/2 flex items-center justify-center relative px-6 md:px-12 mt-8 lg:mt-0 perspective-1000 pointer-events-none"
+            className="w-full lg:w-1/2 flex items-center justify-center relative px-6 md:px-12 mt-8 lg:mt-0 perspective-1000"
           >
             <div
-              className="relative w-full max-w-[480px] aspect-square flex items-center justify-center pointer-events-none"
+              className="relative w-full max-w-[480px] aspect-square flex items-center justify-center"
             >
               <div
                 ref={heroTiltRef}
-                className="absolute inset-0 flex items-center justify-center transition-transform duration-200 ease-out pointer-events-none"
+                className="absolute inset-0 flex items-center justify-center transition-transform duration-200 ease-out"
                 style={{
                   transform: `rotateY(0deg) rotateX(0deg)`,
                 }}

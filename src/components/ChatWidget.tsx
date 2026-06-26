@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Send, User, Minimize2, Package, Trash2, AlertTriangle } from 'lucide-react';
+import { MessageSquare, X, Send, User, Minimize2, Package, Trash2, AlertTriangle, Headphones } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import AuthModal from './AuthModal';
 import { usePathname } from 'next/navigation';
@@ -21,6 +21,7 @@ export function ChatWidget() {
   const [showProductMenu, setShowProductMenu] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
   const [attachedProduct, setAttachedProduct] = useState<any | null>(null);
+  const [productSearch, setProductSearch] = useState('');
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,8 +60,17 @@ export function ChatWidget() {
       }
     });
 
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('header') && isOpenRef.current) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('click', handleGlobalClick);
+
     return () => {
       authListener?.subscription?.unsubscribe();
+      window.removeEventListener('click', handleGlobalClick);
     };
   }, []);
 
@@ -96,6 +106,10 @@ export function ChatWidget() {
     await fetchMessages(user.id, messages.length);
     setIsLoadingMore(false);
   };
+
+  const filteredProducts = catalogProducts.filter(p => 
+    p.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -285,7 +299,7 @@ export function ChatWidget() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <span className="text-lg">🧸</span>
+                <Headphones className="w-5 h-5 text-white" />
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full" />
             </div>
@@ -416,25 +430,41 @@ export function ChatWidget() {
         </div>
 
         <div className="relative shrink-0">
-          {showProductMenu && catalogProducts.length > 0 && (
-            <div className="absolute bottom-full left-3 mb-2 w-[calc(100%-24px)] bg-white border border-slate-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
-              {catalogProducts.map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setAttachedProduct(p);
-                    setShowProductMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-3 border-b border-slate-50 cursor-pointer"
-                >
-                  <img src={p.image} alt={p.name} className="w-8 h-8 rounded-lg object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-slate-800 truncate">{p.name}</p>
-                    <p className="text-[9px] text-pink-500 font-semibold">Rp {Number(p.price).toLocaleString('id-ID')}</p>
-                  </div>
-                </button>
-              ))}
+          {showProductMenu && (
+            <div className="absolute bottom-full left-3 mb-2 w-[calc(100%-24px)] bg-white border border-slate-200 rounded-xl shadow-xl z-10 flex flex-col">
+              <div className="p-2 border-b border-slate-100">
+                <input 
+                  type="text" 
+                  placeholder="Cari boneka..." 
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-pink-400"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {filteredProducts.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setAttachedProduct(p);
+                      setShowProductMenu(false);
+                      setProductSearch('');
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-3 border-b border-slate-50 cursor-pointer"
+                  >
+                    <img src={p.image} alt={p.name} className="w-8 h-8 rounded-lg object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-slate-800 truncate">{p.name}</p>
+                      <p className="text-[9px] text-pink-500 font-semibold">Rp {Number(p.price).toLocaleString('id-ID')}</p>
+                    </div>
+                  </button>
+                ))}
+                {filteredProducts.length === 0 && (
+                  <p className="text-[10px] text-slate-400 p-3 text-center">Boneka tidak ditemukan</p>
+                )}
+              </div>
             </div>
           )}
           
