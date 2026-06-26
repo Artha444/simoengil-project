@@ -1,17 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Send, User, Minimize2, Package, Trash2, AlertTriangle, Headphones } from 'lucide-react';
+import { MessageSquare, X, Send, User, Minimize2, Maximize2, Package, Trash2, AlertTriangle, Headphones } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 import AuthModal from './AuthModal';
 import { usePathname } from 'next/navigation';
 
 export function ChatWidget() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [user, setUser] = useState<any>(null);
+  const [sessionId, setSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -43,10 +46,22 @@ export function ChatWidget() {
       }
     };
     fetchCatalogProducts();
+    const initAnonSession = () => {
+      let anonId = localStorage.getItem('simoengil_anon_id');
+      if (!anonId) {
+        anonId = 'anon-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('simoengil_anon_id', anonId);
+      }
+      setSessionId(anonId);
+    };
+
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && session.user?.user_metadata?.role !== 'admin') {
         setUser(session.user);
+        setSessionId(session.user.id);
+      } else {
+        initAnonSession();
       }
     };
     checkAuth();
@@ -54,9 +69,10 @@ export function ChatWidget() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && session.user?.user_metadata?.role !== 'admin') {
         setUser(session.user);
+        setSessionId(session.user.id);
       } else {
         setUser(null);
-        setMessages([]);
+        initAnonSession();
       }
     });
 
@@ -104,9 +120,9 @@ export function ChatWidget() {
   }, []);
 
   const handleLoadMore = async () => {
-    if (!user || isLoadingMore) return;
+    if (!sessionId || isLoadingMore) return;
     setIsLoadingMore(true);
-    await fetchMessages(user.id, messages.length);
+    await fetchMessages(sessionId, messages.length);
     setIsLoadingMore(false);
   };
 
@@ -115,18 +131,18 @@ export function ChatWidget() {
   );
 
   useEffect(() => {
-    if (!user) return;
+    if (!sessionId) return;
 
     setIsLoading(true);
-    fetchMessages(user.id).finally(() => setIsLoading(false));
+    fetchMessages(sessionId).finally(() => setIsLoading(false));
 
     const channel = supabase
-      .channel(`chat:user:${user.id}`)
+      .channel(`chat:user:${sessionId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'messages',
-        filter: `product_id=eq.${user.id}`
+        filter: `product_id=eq.${sessionId}`
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const newMsg = payload.new;
@@ -140,15 +156,17 @@ export function ChatWidget() {
             }
             return [...prev, newMsg];
           });
-          if (newMsg.sender_role === 'ADMIN' && !isOpenRef.current) {
-            setUnreadCount(prev => prev + 1);
-          } else if (newMsg.sender_role === 'ADMIN' && isOpenRef.current) {
-            // Auto mark as read if received while open
-            fetch('/api/chat', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'mark_read', product_id: user.id, role_to_mark: 'ADMIN' })
-            }).catch(console.warn);
+          if (newMsg.sender_role === 'ADMIN') {
+            playNotificationSound();
+            if (!isOpenRef.current) {
+              setUnreadCount(prev => prev + 1);
+            } else {
+              fetch('/api/chat', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'mark_read', product_id: sessionId, role_to_mark: 'ADMIN' })
+              }).catch(console.warn);
+            }
           }
         } else if (payload.eventType === 'UPDATE') {
           const updatedMsg = payload.new;
@@ -158,21 +176,21 @@ export function ChatWidget() {
       .subscribe();
 
     pollRef.current = setInterval(() => {
-      fetchMessages(user.id);
+      fetchMessages(sessionId);
     }, 5000);
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [user, fetchMessages, isOpen]);
+  }, [sessionId, fetchMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && sessionId) {
       setUnreadCount(0);
       setTimeout(() => inputRef.current?.focus(), 200);
 
@@ -180,18 +198,18 @@ export function ChatWidget() {
       fetch('/api/chat', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'mark_read', product_id: user.id, role_to_mark: 'ADMIN' })
+        body: JSON.stringify({ action: 'mark_read', product_id: sessionId, role_to_mark: 'ADMIN' })
       }).catch(console.warn);
     }
-  }, [isOpen, user]);
+  }, [isOpen, sessionId]);
 
   const clearChat = async () => {
-    if (!user) return;
+    if (!sessionId) return;
     try {
       const res = await fetch('/api/chat', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'clear_chat', product_id: user.id })
+        body: JSON.stringify({ action: 'clear_chat', product_id: sessionId })
       });
       if (res.ok) {
         setMessages([]);
@@ -202,9 +220,33 @@ export function ChatWidget() {
     }
   };
 
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+      
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.2);
+    } catch(e) {
+      console.warn("Audio play failed", e);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !attachedProduct) || !user || isSending) return;
+    if ((!newMessage.trim() && !attachedProduct) || !sessionId || isSending) return;
 
     const textMsg = newMessage.trim();
     let finalMsg = textMsg;
@@ -226,6 +268,7 @@ export function ChatWidget() {
       is_read: false,
     };
     setMessages(prev => [...prev, optimisticMsg]);
+    playNotificationSound();
     
     setIsSending(true);
     setSendError('');
@@ -237,9 +280,9 @@ export function ChatWidget() {
         body: JSON.stringify({
           sender_role: 'USER',
           content: finalMsg,
-          user_id: user.id,
-          user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          product_id: user.id,
+          user_id: user?.id || undefined,
+          user_name: user ? (user.user_metadata?.full_name || user.email?.split('@')[0]) : 'Guest',
+          product_id: sessionId,
         })
       });
 
@@ -290,37 +333,48 @@ export function ChatWidget() {
         )}
       </button>
 
-      <div
-        className={`fixed bottom-24 right-6 w-[360px] sm:w-[400px] bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right border border-slate-100 ${
-          isOpen
-            ? 'scale-100 opacity-100 translate-y-0'
-            : 'scale-90 opacity-0 translate-y-4 pointer-events-none'
-        }`}
-        style={{ height: '540px', maxHeight: '75vh' }}
-      >
-        <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white p-4 flex justify-between items-center shrink-0">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20, transition: { duration: 0.2 } }}
+            transition={{ type: "spring", bounce: 0.35, duration: 0.6 }}
+            className={`fixed bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 flex flex-col overflow-hidden origin-bottom-right ${
+              isExpanded
+                ? 'inset-0 w-full h-full rounded-none border-0 sm:border sm:border-slate-100 sm:top-24 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[50vw] sm:rounded-3xl'
+                : 'bottom-24 right-6 w-[calc(100vw-48px)] sm:w-[400px] rounded-3xl border border-slate-100'
+            }`}
+            style={!isExpanded ? { height: '540px', maxHeight: '75vh' } : {}}
+          >
+        {/* Chat Header */}
+        <div className="bg-[#0A0F1D] text-white p-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                 <Headphones className="w-5 h-5 text-white" />
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full" />
             </div>
             <div>
               <h3 className="font-bold text-sm">CS Simoengil</h3>
-              <p className="text-[10px] text-pink-100">Online - Biasanya membalas cepat</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {user && (
-              <button
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
-                title="Hapus riwayat obrolan"
-              >
-                <Trash2 className="w-4 h-4 text-white/90" />
-              </button>
-            )}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+              title={isExpanded ? "Perkecil ukuran" : "Perbesar ukuran"}
+            >
+              {isExpanded ? <Minimize2 className="w-4 h-4 text-white/90" /> : <Maximize2 className="w-4 h-4 text-white/90" />}
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+              title="Hapus riwayat obrolan"
+            >
+              <Trash2 className="w-4 h-4 text-white/90" />
+            </button>
             <button
               onClick={() => setIsOpen(false)}
               className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
@@ -330,26 +384,17 @@ export function ChatWidget() {
           </div>
         </div>
 
-        {!user ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50">
-            <div className="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mb-4">
-              <User className="w-8 h-8" />
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+          {messages.length === 0 && !isLoading && (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400">
+              <MessageSquare className="w-8 h-8 mb-3 opacity-20" />
+              <p className="text-xs">Mulai percakapan dengan CS kami!</p>
             </div>
-            <h3 className="font-bold text-slate-800 text-sm mb-2">Belum Login</h3>
-            <p className="text-xs text-slate-500 mb-6">Silakan login terlebih dahulu untuk memulai obrolan dengan tim kami.</p>
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-2.5 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl font-bold text-xs shadow-sm hover:from-pink-600 hover:to-pink-700 transition-colors cursor-pointer"
-            >
-              Login Sekarang
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
-              <div className="flex flex-col items-start">
-                <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs bg-white border border-slate-200 text-slate-700 shadow-sm">
-                  <p className="font-semibold text-pink-600 mb-1">Halo, {user?.user_metadata?.full_name?.split(' ')[0] || 'kak'}! 👋</p>
+          )}
+
+          <div className="flex flex-col items-start">
+            <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs bg-white border border-slate-200 text-slate-700 shadow-sm">
+              <p className="font-semibold text-pink-600 mb-1">Halo, {user?.user_metadata?.full_name?.split(' ')[0] || 'kak'}! 👋</p>
               <p>Ada yang bisa kami bantu? Tanya stok, detail boneka, atau pesanan di sini ya 😊</p>
             </div>
           </div>
@@ -526,10 +571,6 @@ export function ChatWidget() {
           </div>
         </form>
         </div>
-        </>
-        )}
-
-        {/* Delete Confirmation Modal */}
         {isDeleteModalOpen && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 rounded-3xl">
             <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-xl animate-in fade-in zoom-in-95 duration-200">
@@ -557,7 +598,9 @@ export function ChatWidget() {
             </div>
           </div>
         )}
-      </div>
+        </motion.div>
+        )}
+      </AnimatePresence>
 
       <AuthModal
         isOpen={isAuthModalOpen}

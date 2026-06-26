@@ -280,7 +280,7 @@ export default function AdminChatPanel() {
         body: JSON.stringify({
           sender_role: 'ADMIN',
           content: finalMsg,
-          user_id: selectedUser.user_id,
+          user_id: selectedUser.user_id.startsWith('anon-') ? undefined : selectedUser.user_id,
           user_name: selectedUser.user_name,
           product_id: selectedUser.user_id,
         })
