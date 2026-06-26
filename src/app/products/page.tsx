@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Heart, 
@@ -21,6 +21,7 @@ import { Product, ProductVariant, PRODUCTS } from '@/data/products';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { WishlistDrawer } from '@/components/WishlistDrawer';
+import { CartCelebration } from '@/components/CartCelebration';
 import { GSAPInitializer } from '@/components/GSAPInitializer';
 
 import { OrderTrackingModal } from '@/components/OrderTrackingModal';
@@ -80,6 +81,15 @@ export default function Home() {
   const [isSortOpen, setIsSortOpen] = useState<boolean>(false);
   const sortRef = React.useRef<HTMLDivElement>(null);
   const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
+  const drawerCartIconRef = useRef<HTMLDivElement | null>(null);
+  const [celebrateTrigger, setCelebrateTrigger] = useState(false);
+  const [celebrateProductImage, setCelebrateProductImage] = useState<string | undefined>();
+
+  const handleCelebrate = (productImage?: string) => {
+    setCelebrateProductImage(productImage);
+    setCelebrateTrigger(false);
+    requestAnimationFrame(() => setCelebrateTrigger(true));
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -691,6 +701,7 @@ export default function Home() {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onAddToCart={handleAddToCart}
+        onCelebrate={handleCelebrate}
       />
 
       {/* WISHLIST DRAWER */}
@@ -703,12 +714,20 @@ export default function Home() {
         onDetailClick={handleProductDetailClick}
         isLoggedIn={!!user}
         onAuthRequired={() => setIsAuthModalOpen(true)}
+        drawerCartIconRef={drawerCartIconRef}
       />
       
       {/* LIVE CHAT */}
 
 
       {/* TRACKING MODAL */}
+      <CartCelebration
+        trigger={celebrateTrigger}
+        productImage={celebrateProductImage}
+        cartIconRef={drawerCartIconRef}
+        onComplete={() => setCelebrateTrigger(false)}
+      />
+
       <OrderTrackingModal isOpen={isTrackingOpen} onClose={() => setIsTrackingOpen(false)} />
 
       {/* AUTH MODAL */}

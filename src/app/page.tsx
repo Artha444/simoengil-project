@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -23,7 +23,9 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
 import FallingBoxesPhysics from "@/components/FallingBoxesPhysics";
 import { WishlistDrawer } from "@/components/WishlistDrawer";
+import { CartCelebration } from "@/components/CartCelebration";
 import { GSAPInitializer } from "@/components/GSAPInitializer";
+import Hero3DBoneka from "@/components/Hero3DBoneka";
 
 import { OrderTrackingModal } from "@/components/OrderTrackingModal";
 import AuthModal from "@/components/AuthModal";
@@ -84,21 +86,53 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<string>("terbaru");
-  const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
+  const heroTiltRef = useRef<HTMLDivElement>(null);
+  const drawerCartIconRef = useRef<HTMLDivElement | null>(null);
+  const [celebrateTrigger, setCelebrateTrigger] = useState(false);
+  const [celebrateProductImage, setCelebrateProductImage] = useState<string | undefined>();
 
-  const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only tilt on desktop
-    if (window.innerWidth < 768) return;
-    const { left, top, width, height } =
-      e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - left - width / 2) / 20;
-    const y = -(e.clientY - top - height / 2) / 20;
-    setHeroTilt({ x, y });
+  const handleCelebrate = (productImage?: string) => {
+    setCelebrateProductImage(productImage);
+    setCelebrateTrigger(false);
+    requestAnimationFrame(() => setCelebrateTrigger(true));
   };
 
-  const handleHeroMouseLeave = () => {
-    setHeroTilt({ x: 0, y: 0 });
-  };
+  // Global mouse move for 3D hero tilt
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 768) return;
+      if (!heroTiltRef.current) return;
+      
+      const rect = heroTiltRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Calculate distance from center, dampened to make the effect subtle
+      const x = (e.clientX - centerX) / 40;
+      const y = -(e.clientY - centerY) / 40;
+      
+      // Limit the maximum rotation to prevent extreme angles
+      const maxRotation = 15;
+      const clampedX = Math.max(-maxRotation, Math.min(maxRotation, x));
+      const clampedY = Math.max(-maxRotation, Math.min(maxRotation, y));
+      
+      heroTiltRef.current.style.transform = `rotateY(${clampedX}deg) rotateX(${clampedY}deg)`;
+    };
+
+    const handleGlobalMouseLeave = () => {
+      if (heroTiltRef.current) {
+        heroTiltRef.current.style.transform = `rotateY(0deg) rotateX(0deg)`;
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseleave', handleGlobalMouseLeave);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseleave', handleGlobalMouseLeave);
+    };
+  }, []);
 
   // Site Settings
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
@@ -454,8 +488,8 @@ export default function Home() {
           <FallingBoxesPhysics />
           
           {/* Hero Info */}
-          <div className="w-full lg:w-1/2 text-center lg:text-left space-y-8 relative z-10 pointer-events-none">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 border border-[#FFB6C8]/30 text-[#FF8FB1] font-bold text-xs uppercase tracking-widest shadow-xs pointer-events-auto hover:scale-105 transition-transform">
+          <div className="w-full lg:w-1/2 text-center lg:text-left space-y-8 relative z-10">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 border border-[#FFB6C8]/30 text-[#FF8FB1] font-bold text-xs uppercase tracking-widest shadow-xs hover:scale-105 transition-transform">
               <Sparkles className="w-3.5 h-3.5 text-[#E8B37D]" />
               <span>Boneka Flanel Premium Lokal</span>
             </div>
@@ -474,7 +508,7 @@ export default function Home() {
             </p>
 
             {/* Value Highlights */}
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto lg:mx-0 text-left pointer-events-auto">
+            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto lg:mx-0 text-left">
               <div className="flex items-center gap-2.5 text-sm font-bold text-[#2C2C2C]">
                 <Smile className="w-5 h-5 text-[#FF8FB1]" />
                 <span>Super Lembut seperti Pelukan</span>
@@ -493,7 +527,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 gsap-hero-ctas pointer-events-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 gsap-hero-ctas">
               <Link
                 href="/products"
                 className="w-full sm:w-auto px-8 py-4 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white font-extrabold rounded-2xl text-center shadow-lg shadow-[#FF8FB1]/20 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer btn-premium-hover"
@@ -510,31 +544,28 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero Interactive Showcase Images (Zielabs Hybrid Style) */}
           <div
-            className="w-full lg:w-1/2 flex items-center justify-center relative px-6 md:px-12 mt-8 lg:mt-0 perspective-1000"
-            onMouseMove={handleHeroMouseMove}
-            onMouseLeave={handleHeroMouseLeave}
+            className="w-full lg:w-1/2 flex items-center justify-center relative px-6 md:px-12 mt-8 lg:mt-0 perspective-1000 pointer-events-none"
           >
             <div
-              className="relative w-full max-w-[480px] aspect-square flex items-center justify-center transition-transform duration-200 ease-out"
-              style={{
-                transform: `rotateY(${heroTilt.x}deg) rotateX(${heroTilt.y}deg)`,
-              }}
+              className="relative w-full max-w-[480px] aspect-square flex items-center justify-center pointer-events-none"
             >
-              {/* Glowing Pink and Gold Circles Background */}
-              <div className="absolute w-[85%] h-[85%] rounded-full bg-gradient-to-tr from-[#FFF5F0] via-[#FFF0F3] to-[#FFFDF0] shadow-[0_20px_60px_-15px_rgba(255,182,200,0.45)] border-4 border-white z-0 animate-pulse-glow" />
               <div
-                className="absolute w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-[#FFB6C8]/20 to-[#E8B37D]/20 blur-xl z-0 animate-pulse-glow"
-                style={{ animationDelay: "1s" }}
-              />
+                ref={heroTiltRef}
+                className="absolute inset-0 flex items-center justify-center transition-transform duration-200 ease-out pointer-events-none"
+                style={{
+                  transform: `rotateY(0deg) rotateX(0deg)`,
+                }}
+              >
+                {/* Glowing Pink and Gold Circles Background */}
+                <div className="absolute w-[85%] h-[85%] rounded-full bg-gradient-to-tr from-[#FFF5F0] via-[#FFF0F3] to-[#FFFDF0] shadow-[0_20px_60px_-15px_rgba(255,182,200,0.45)] border-4 border-white z-0 animate-pulse-glow" />
+                <div
+                  className="absolute w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-[#FFB6C8]/20 to-[#E8B37D]/20 blur-xl z-0 animate-pulse-glow"
+                  style={{ animationDelay: "1s" }}
+                />
 
-              {/* Main Teddy Plushie */}
-              <img
-                src="/images/plushie_teddy.png"
-                alt="Main Plushie Bear"
-                className="w-[82%] h-[82%] object-contain drop-shadow-[0_25px_35px_rgba(255,143,177,0.25)] animate-float relative z-10"
-              />
+                {/* Main Teddy Plushie */}
+                <Hero3DBoneka />
 
               {/* Floating Badge Left */}
               <div className="absolute top-8 -left-2 bg-white/95 backdrop-blur-md border border-[#FFB6C8]/30 text-[#2C2C2C] text-xs font-bold py-2.5 px-4 rounded-2xl shadow-md rotate-3 flex items-center gap-2 z-20 hover:scale-105 transition-transform duration-300">
@@ -553,14 +584,15 @@ export default function Home() {
               {/* Secondary smaller floating plushie (Bunny) */}
               <div className="absolute bottom-0 left-0 w-36 h-36 flex items-center justify-center animate-float-slow z-20 drop-shadow-lg">
                 <img
-                  src="/images/plushie_bunny.png"
+                  src="/images/boneka2.png"
                   alt="Mini Bunny Plushie"
                   className="w-full h-full object-contain"
                 />
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* TRUST BADGES BAR */}
         <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mb-24">
@@ -1005,6 +1037,7 @@ export default function Home() {
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
           onAddToCart={handleAddToCart}
+          onCelebrate={handleCelebrate}
         />
 
         {/* WISHLIST DRAWER */}
@@ -1017,6 +1050,14 @@ export default function Home() {
           onDetailClick={handleProductDetailClick}
           isLoggedIn={!!user}
           onAuthRequired={() => setIsAuthModalOpen(true)}
+          drawerCartIconRef={drawerCartIconRef}
+        />
+
+        <CartCelebration
+          trigger={celebrateTrigger}
+          productImage={celebrateProductImage}
+          cartIconRef={drawerCartIconRef}
+          onComplete={() => setCelebrateTrigger(false)}
         />
 
         {/* TRACKING MODAL */}

@@ -21,12 +21,12 @@ import { supabase } from "@/lib/supabase";
 import AuthModal from "./AuthModal";
 import confetti from "canvas-confetti";
 import { lockBodyScroll } from "@/lib/scrollLock";
-
 interface ProductDetailModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (product: Product, variantSize?: string, variantType?: string) => void;
+  onCelebrate?: (productImage?: string) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -34,6 +34,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isOpen,
   onClose,
   onAddToCart,
+  onCelebrate,
 }) => {
   const router = useRouter();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -49,6 +50,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const productImageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -258,7 +260,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           className="mobile-no-scrollbar w-full h-full max-h-[85vh] md:max-h-[90vh] flex flex-col md:flex-row overflow-y-auto md:overflow-hidden"
         >
           {/* Left Side: Image */}
-          <div className="md:w-1/2 p-6 md:p-8 bg-[#FFF8F3]/60 flex flex-col justify-center relative shrink-0 min-h-[300px] md:min-h-full">
+          <div ref={productImageRef} className="md:w-1/2 p-6 md:p-8 bg-[#FFF8F3]/60 flex flex-col justify-center relative shrink-0 min-h-[300px] md:min-h-full">
             <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-pink-100/30 flex items-center justify-center group shadow-sm">
             <img
               src={activeImage || product.image}
@@ -418,7 +420,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   const selectedSize = selectedSizeState || undefined;
                   const selectedType = selectedTypeState || undefined;
                   onAddToCart(product, selectedSize, selectedType);
-                  onClose();
+                  onCelebrate?.(product.image);
+                  setTimeout(() => onClose(), 100);
                 }}
                 className={`flex-1 py-3 px-2 ${isPurchaseDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-white border-2 border-[#0F4C5C] text-[#0F4C5C] hover:bg-slate-50 hover:scale-[1.02] active:scale-95'} rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2`}
               >

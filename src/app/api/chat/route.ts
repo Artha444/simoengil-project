@@ -109,26 +109,40 @@ export async function GET(request: Request) {
     }
 
     if (productId) {
+      const limit = parseInt(searchParams.get('limit') || '50');
+      const offset = parseInt(searchParams.get('offset') || '0');
+
       const { data, error } = await supabaseAdmin
         .from('messages')
         .select('*')
         .eq('product_id', productId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
-      return NextResponse.json({ success: true, data: data || [] });
+      
+      // Reverse to chronological order
+      const chronData = (data || []).reverse();
+      return NextResponse.json({ success: true, data: chronData });
     }
 
     const sessionId = searchParams.get('session_id');
     if (sessionId) {
+      const limit = parseInt(searchParams.get('limit') || '50');
+      const offset = parseInt(searchParams.get('offset') || '0');
+
       const { data, error } = await supabaseAdmin
         .from('messages')
         .select('*')
         .eq('product_id', sessionId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
-      return NextResponse.json({ success: true, data: data || [] });
+
+      // Reverse to chronological order
+      const chronData = (data || []).reverse();
+      return NextResponse.json({ success: true, data: chronData });
     }
 
     return NextResponse.json({ error: 'Missing query parameters' }, { status: 400 });
@@ -138,6 +152,28 @@ export async function GET(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { action, product_id } = body;
+    
+    if (action === 'clear_chat' && product_id) {
+      const supabaseAdmin = getAdminClient();
+      const { error } = await supabaseAdmin
+        .from('messages')
+        .delete()
+        .eq('product_id', product_id);
+        
+      if (error) throw error;
+      return NextResponse.json({ success: true });
+    }
+    
+    return NextResponse.json({ error: 'Invalid action or missing parameters' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error deleting messages:', error);
+    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });
+  }
+}
 export async function PUT(request: Request) {
   try {
     const body = await request.json();

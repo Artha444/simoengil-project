@@ -90,14 +90,19 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   // Load product from Supabase & All Products & Check Admin Session & Wishlist
   useEffect(() => {
     // 1. Cart from localStorage
-    const savedCart = localStorage.getItem("simoengil_cart");
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Failed to load cart", e);
+    const loadCart = () => {
+      const savedCart = localStorage.getItem("simoengil_cart");
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (e) {
+          console.error("Failed to load cart", e);
+        }
       }
-    }
+    };
+    loadCart();
+
+    window.addEventListener("cart_updated", loadCart);
 
     // 2. Fetch specific product
     const fetchProduct = async () => {
@@ -337,6 +342,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener("cart_updated", loadCart);
     };
   }, [id]);
 
@@ -482,18 +488,33 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const handleAddToCart = () => {
     if (isPurchaseDisabled) return;
 
-    // Create cart item
-    const cartItemId = `${product.id}-${selectedSize || "default"}-${Date.now()}`;
-    const newItem: CartItem = {
-      ...product,
-      cartItemId,
-      selectedVariantType: selectedType || undefined,
-      selectedVariantSize: selectedSize || undefined,
-      quantity: 1,
-      selectedPrice: currentPrice ?? 0,
-    };
+    const existingItemIndex = cart.findIndex(
+      (item) =>
+        item.id === product.id &&
+        item.selectedVariantType === (selectedType || undefined) &&
+        item.selectedVariantSize === (selectedSize || undefined)
+    );
 
-    const updated = [...cart, newItem];
+    let updated;
+    if (existingItemIndex >= 0) {
+      updated = [...cart];
+      updated[existingItemIndex] = {
+        ...updated[existingItemIndex],
+        quantity: updated[existingItemIndex].quantity + 1,
+      };
+    } else {
+      const cartItemId = `${product.id}-${selectedType || "default"}-${selectedSize || "default"}-${Date.now()}`;
+      const newItem: CartItem = {
+        ...product,
+        cartItemId,
+        selectedVariantType: selectedType || undefined,
+        selectedVariantSize: selectedSize || undefined,
+        quantity: 1,
+        selectedPrice: currentPrice ?? 0,
+      };
+      updated = [...cart, newItem];
+    }
+
     setCart(updated);
     localStorage.setItem("simoengil_cart", JSON.stringify(updated));
 

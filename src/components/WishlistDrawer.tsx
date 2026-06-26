@@ -14,6 +14,7 @@ interface WishlistDrawerProps {
   onDetailClick: (product: Product) => void;
   isLoggedIn?: boolean;
   onAuthRequired?: () => void;
+  drawerCartIconRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
@@ -25,6 +26,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   onDetailClick,
   isLoggedIn = false,
   onAuthRequired,
+  drawerCartIconRef,
 }) => {
   const router = useRouter();
   const [isRendered, setIsRendered] = useState(isOpen);
@@ -87,8 +89,8 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
         >
           {/* Header */}
           <div className="p-6 border-b border-pink-100/50 flex items-center justify-between bg-white/50 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-pink-100 to-orange-100 border border-pink-200 text-[#FF8FB1] shadow-sm">
+              <div className="flex items-center gap-3">
+              <div ref={drawerCartIconRef} className="p-2.5 rounded-xl bg-gradient-to-br from-pink-100 to-orange-100 border border-pink-200 text-[#FF8FB1] shadow-sm">
                 <ShoppingBag className="w-5 h-5" />
               </div>
               <div>

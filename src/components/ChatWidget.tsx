@@ -1,24 +1,36 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, X, Send, User, Minimize2, Package } from 'lucide-react';
+import { MessageSquare, X, Send, User, Minimize2, Package, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import AuthModal from './AuthModal';
+import { usePathname } from 'next/navigation';
 
 export function ChatWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [sendError, setSendError] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showProductMenu, setShowProductMenu] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
   const [attachedProduct, setAttachedProduct] = useState<any | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchCatalogProducts = async () => {
@@ -52,14 +64,24 @@ export function ChatWidget() {
     };
   }, []);
 
-  const fetchMessages = useCallback(async (pid: string) => {
+  const fetchMessages = useCallback(async (pid: string, offset = 0, limit = 50) => {
     try {
-      const res = await fetch(`/api/chat?product_id=${pid}`);
+      const res = await fetch(`/api/chat?product_id=${pid}&offset=${offset}&limit=${limit}`);
       const result = await res.json();
       if (result.success && Array.isArray(result.data)) {
-        setMessages(result.data);
+        if (offset === 0) {
+          setMessages(result.data);
+        } else {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = result.data.filter((m: any) => !existingIds.has(m.id));
+            return [...newMsgs, ...prev];
+          });
+        }
+        setHasMore(result.data.length === limit);
+
         const unread = result.data.filter((m: any) => m.sender_role === 'ADMIN' && !m.is_read).length;
-        if (!isOpen) {
+        if (!isOpenRef.current) {
           setUnreadCount(unread);
         }
       }
@@ -67,6 +89,13 @@ export function ChatWidget() {
       console.warn('Failed to fetch messages', e);
     }
   }, []);
+
+  const handleLoadMore = async () => {
+    if (!user || isLoadingMore) return;
+    setIsLoadingMore(true);
+    await fetchMessages(user.id, messages.length);
+    setIsLoadingMore(false);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -94,8 +123,15 @@ export function ChatWidget() {
             }
             return [...prev, newMsg];
           });
-          if (newMsg.sender_role === 'ADMIN' && !isOpen) {
+          if (newMsg.sender_role === 'ADMIN' && !isOpenRef.current) {
             setUnreadCount(prev => prev + 1);
+          } else if (newMsg.sender_role === 'ADMIN' && isOpenRef.current) {
+            // Auto mark as read if received while open
+            fetch('/api/chat', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'mark_read', product_id: user.id, role_to_mark: 'ADMIN' })
+            }).catch(console.warn);
           }
         } else if (payload.eventType === 'UPDATE') {
           const updatedMsg = payload.new;
@@ -131,6 +167,23 @@ export function ChatWidget() {
       }).catch(console.warn);
     }
   }, [isOpen, user]);
+
+  const clearChat = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_chat', product_id: user.id })
+      });
+      if (res.ok) {
+        setMessages([]);
+        setIsDeleteModalOpen(false);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +244,9 @@ export function ChatWidget() {
     }
   };
 
-  if (!user) return null;
+  if (pathname === '/dashboard' || pathname === '/admin-panel/dashboard') {
+    return null;
+  }
 
   return (
     <>
@@ -210,7 +265,7 @@ export function ChatWidget() {
           <div className="relative">
             <MessageSquare className="w-6 h-6" />
             {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 animate-bounce">
+              <span className="absolute -top-3.5 -right-3.5 min-w-[24px] h-[24px] bg-slate-900 text-white text-[11px] font-black rounded-full flex items-center justify-center px-1 animate-bounce border-2 border-white shadow-md">
                 {unreadCount}
               </span>
             )}
@@ -239,18 +294,45 @@ export function ChatWidget() {
               <p className="text-[10px] text-pink-100">Online - Biasanya membalas cepat</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {user && (
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+                title="Hapus riwayat obrolan"
+              >
+                <Trash2 className="w-4 h-4 text-white/90" />
+              </button>
+            )}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1.5 hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
-          <div className="flex flex-col items-start">
-            <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs bg-white border border-slate-200 text-slate-700 shadow-sm">
-              <p className="font-semibold text-pink-600 mb-1">Halo, {user.user_metadata?.full_name?.split(' ')[0] || 'kak'}! 👋</p>
+        {!user ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-50">
+            <div className="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mb-4">
+              <User className="w-8 h-8" />
+            </div>
+            <h3 className="font-bold text-slate-800 text-sm mb-2">Belum Login</h3>
+            <p className="text-xs text-slate-500 mb-6">Silakan login terlebih dahulu untuk memulai obrolan dengan tim kami.</p>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl font-bold text-xs shadow-sm hover:from-pink-600 hover:to-pink-700 transition-colors cursor-pointer"
+            >
+              Login Sekarang
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
+              <div className="flex flex-col items-start">
+                <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs bg-white border border-slate-200 text-slate-700 shadow-sm">
+                  <p className="font-semibold text-pink-600 mb-1">Halo, {user?.user_metadata?.full_name?.split(' ')[0] || 'kak'}! 👋</p>
               <p>Ada yang bisa kami bantu? Tanya stok, detail boneka, atau pesanan di sini ya 😊</p>
             </div>
           </div>
@@ -264,11 +346,20 @@ export function ChatWidget() {
             </div>
           )}
 
+          {hasMore && !isLoading && (
+            <div className="flex justify-center my-2">
+              <button 
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="text-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1 rounded-full font-semibold transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+              >
+                {isLoadingMore ? 'Memuat...' : 'Tampilkan pesan sebelumnya'}
+              </button>
+            </div>
+          )}
+
           {messages.filter(m => m.sender_role !== 'SYSTEM').map((msg, idx) => (
             <div key={msg.id || idx} className={`flex flex-col ${msg.sender_role === 'USER' ? 'items-end' : 'items-start'}`}>
-              {msg.sender_role === 'ADMIN' && (
-                <span className="text-[9px] font-bold text-pink-500 mb-1 ml-1">CS Simoengil</span>
-              )}
               <div
                 className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
                   msg.sender_role === 'USER'
@@ -280,18 +371,24 @@ export function ChatWidget() {
                   (() => {
                     const [prodStr, textStr] = msg.content.split(':::');
                     const parts = prodStr.split('|');
+                    const pId = parts[1];
                     const pName = parts[2];
                     const pImg = parts[3];
                     const pPrice = parts[4]?.replace(']', '');
                     return (
                       <div className="flex flex-col gap-2">
-                        <div className={`flex items-center gap-3 p-2 rounded-xl border ${msg.sender_role === 'USER' ? 'bg-white/20 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-slate-800'}`}>
+                        <a 
+                          href={`/product/${pId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-3 p-2 rounded-xl border hover:opacity-90 transition-opacity cursor-pointer ${msg.sender_role === 'USER' ? 'bg-white/20 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-slate-800'}`}
+                        >
                           {pImg && <img src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover bg-white shrink-0" />}
                           <div className="min-w-0 flex-1">
                             <p className="font-bold text-[11px] leading-tight mb-0.5 truncate">{pName || 'Produk'}</p>
                             <p className="text-[10px] font-semibold opacity-90">Rp {Number(pPrice || 0).toLocaleString('id-ID')}</p>
                           </div>
-                        </div>
+                        </a>
                         {textStr && <p className="text-xs break-words">{textStr}</p>}
                       </div>
                     );
@@ -396,7 +493,43 @@ export function ChatWidget() {
           </div>
         </form>
         </div>
+        </>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {isDeleteModalOpen && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 rounded-3xl">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-xl animate-in fade-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-center font-bold text-slate-800 text-lg mb-2">Hapus Obrolan?</h3>
+              <p className="text-center text-[11px] text-slate-500 mb-6">
+                Riwayat obrolan akan dihapus permanen.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={clearChat}
+                  className="w-full px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-sm shadow-red-500/30"
+                >
+                  Ya, Hapus
+                </button>
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </>
   );
 }

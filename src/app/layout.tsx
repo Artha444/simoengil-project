@@ -5,6 +5,7 @@ import "./globals.css";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Header from "@/components/Header";
 import { ChatWidget } from "@/components/ChatWidget";
+import MainLayoutWrapper from "@/components/MainLayoutWrapper";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -83,9 +84,9 @@ export default function RootLayout({
         <Header />
         
         {/* Main Content */}
-        <div className="relative z-10 flex-1 flex flex-col pt-24">
+        <MainLayoutWrapper>
           {children}
-        </div>
+        </MainLayoutWrapper>
         <PWAInstallPrompt />
         <ChatWidget />
       </body>

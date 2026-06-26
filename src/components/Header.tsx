@@ -30,7 +30,7 @@ export default function Header() {
 
   // Scroll detection for hiding/showing navbar
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = React.useRef(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -38,17 +38,17 @@ export default function Header() {
       const currentScrollY = window.scrollY;
 
       // If we scroll down past 50px, hide the navbar. If we scroll up, show it.
-      if (currentScrollY > 50 && currentScrollY > lastScrollY) {
+      if (currentScrollY > 50 && currentScrollY > lastScrollY.current) {
         setIsVisible(false);
       } else {
         setIsVisible(true);
       }
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // Load auth & cart state
   useEffect(() => {
@@ -69,6 +69,18 @@ export default function Header() {
     window.addEventListener("storage", (e) => {
       if (e.key === "simoengil_cart") loadCart();
     });
+
+    // Listen to same-window cart updates
+    window.addEventListener("cart_updated", loadCart);
+
+    // Override localStorage.setItem to dispatch custom event
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = function(key, value) {
+      originalSetItem.apply(this, [key, value]);
+      if (key === 'simoengil_cart') {
+        window.dispatchEvent(new Event('cart_updated'));
+      }
+    };
 
     // Auth
     const checkAuth = async () => {
@@ -100,6 +112,10 @@ export default function Header() {
 
     return () => {
       authListener?.subscription?.unsubscribe();
+      window.removeEventListener("cart_updated", loadCart);
+      if (localStorage.setItem !== originalSetItem) {
+        localStorage.setItem = originalSetItem;
+      }
     };
   }, []);
 
@@ -146,12 +162,12 @@ export default function Header() {
   return (
     <>
       <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: isVisible ? 0 : -120 }}
+        initial={{ y: "-100%" }}
+        animate={{ y: isVisible ? "0%" : "-150%" }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 left-0 right-0 w-full z-50 pt-2 pb-0 sm:py-4 px-4 pointer-events-none"
+        className="fixed top-0 left-0 right-0 w-full z-40 pt-2 pb-0 sm:py-4 px-4"
       >
-        <div className="max-w-6xl mx-auto pointer-events-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Main Navbar Container (Floating Pill Style) */}
           <div className="bg-[#0A0F1D]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl md:rounded-[2rem] overflow-hidden">
             {/* Admin Bar (if admin) */}
@@ -242,6 +258,8 @@ export default function Header() {
 
                 {/* Cart */}
                 <button
+                  data-cart-icon
+                  aria-label="Buka keranjang"
                   onClick={() => setIsWishlistOpen(true)}
                   className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all cursor-pointer"
                 >

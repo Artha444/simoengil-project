@@ -47,6 +47,16 @@ export default function FallingBoxesPhysics() {
       },
     });
 
+    // Ensure the canvas fills the container and allows direct interaction
+    render.canvas.style.position = 'absolute';
+    render.canvas.style.top = '0';
+    render.canvas.style.left = '0';
+    render.canvas.style.width = width + 'px';
+    render.canvas.style.height = height + 'px';
+    render.canvas.style.touchAction = 'none';
+    render.canvas.style.userSelect = 'none';
+    render.canvas.style.msTouchAction = 'none';
+
     // Simoengil Brand Colors for boxes
     const colors = ["#FFB6C8", "#FF8FB1", "#E8B37D", "#FFF5F0", "#a5f3fc", "#fbcfe8", "#d8b4fe"];
     const texts = ["Simoengil", "Lucu", "Handmade", "Kuat", "Rapih", "Aman", "Gemoy"];
@@ -93,9 +103,22 @@ export default function FallingBoxesPhysics() {
     // Add mouse control normally
     const mouse = Mouse.create(render.canvas);
     
+    // Explicitly sync pixel ratio to prevent massive coordinate offsets on Retina/scaled displays
+    const currentPixelRatio = window.devicePixelRatio || 1;
+    mouse.pixelRatio = currentPixelRatio;
+    render.canvas.setAttribute('data-pixel-ratio', String(currentPixelRatio));
+    render.canvas.style.pointerEvents = 'auto'; // Explicitly set for the canvas
+    
     // Prevent scrolling issues
     mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
     mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
+
+    // Forward global window mouse events to the Matter.Mouse so dragging isn't interrupted 
+    // when hovering over buttons or other pointer-events-auto elements!
+    // (Note: touch events implicitly capture their target, so we don't need global touch listeners, 
+    // which would actually break scrolling/clicking due to Matter.js calling preventDefault on touches)
+    window.addEventListener('mousemove', mouse.mousemove as EventListener);
+    window.addEventListener('mouseup', mouse.mouseup as EventListener);
 
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse: mouse,
@@ -144,8 +167,13 @@ export default function FallingBoxesPhysics() {
       const newWidth = sceneRef.current.clientWidth;
       const newHeight = sceneRef.current.clientHeight;
 
-      render.canvas.width = newWidth;
-      render.canvas.height = newHeight;
+      // Fix coordinate offset on resize by keeping pixelRatio intact
+      const pixelRatio = window.devicePixelRatio || 1;
+      render.canvas.width = newWidth * pixelRatio;
+      render.canvas.height = newHeight * pixelRatio;
+      render.canvas.style.width = newWidth + "px";
+      render.canvas.style.height = newHeight + "px";
+      
       render.options.width = newWidth;
       render.options.height = newHeight;
       
@@ -159,6 +187,8 @@ export default function FallingBoxesPhysics() {
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', mouse.mousemove as EventListener);
+      window.removeEventListener('mouseup', mouse.mouseup as EventListener);
       Render.stop(render);
       Runner.stop(runner);
       Composite.clear(engine.world, false);
@@ -180,10 +210,11 @@ export default function FallingBoxesPhysics() {
         style={{ 
           top: 0,
           bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: 'calc(50% - 50vw)',
           width: '100vw',
-          pointerEvents: 'auto'
+          pointerEvents: 'auto',
+          touchAction: 'none',
+          msTouchAction: 'none',
         }}
       />
     </>

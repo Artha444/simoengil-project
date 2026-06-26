@@ -1849,7 +1849,7 @@ export default function AdminDashboardPage() {
               )}
             </section>
           </div>
-        ) : (
+        ) : activeTab === 'halaman' ? (
           <div className="max-w-3xl space-y-4">
             <div className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-sm">
               <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
@@ -1995,7 +1995,7 @@ export default function AdminDashboardPage() {
               </form>
             </div>
           </div>
-        )}
+        ) : null}
 
         {activeTab === 'chat' && (
           <AdminChatPanel />

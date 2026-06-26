@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Send, User, Search, RefreshCw, ArrowLeft, Circle, Package, X } from 'lucide-react';
+import { MessageSquare, Send, User, Search, RefreshCw, ArrowLeft, Circle, Package, X, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Conversation {
@@ -18,13 +18,17 @@ export default function AdminChatPanel() {
   const [selectedUser, setSelectedUser] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sendError, setSendError] = useState('');
-  const [showProductMenu, setShowProductMenu] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [showProductMenu, setShowProductMenu] = useState(false);
   const [attachedProduct, setAttachedProduct] = useState<any | null>(null);
+  
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,19 +61,69 @@ export default function AdminChatPanel() {
 
   useEffect(() => {
     fetchConversations();
+
+    const globalChannel = supabase
+      .channel('chat:admin:global')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages'
+      }, () => {
+        fetchConversations();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(globalChannel);
+    };
   }, [fetchConversations]);
 
-  const fetchMessages = useCallback(async (pid: string) => {
+  const fetchMessages = useCallback(async (pid: string, offset = 0, limit = 50) => {
     try {
-      const res = await fetch(`/api/chat?product_id=${pid}`);
+      const res = await fetch(`/api/chat?product_id=${pid}&offset=${offset}&limit=${limit}`);
       const result = await res.json();
       if (result.success) {
-        setMessages(result.data);
+        if (offset === 0) {
+          setMessages(result.data);
+        } else {
+          setMessages(prev => {
+            // filter duplicates just in case
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = result.data.filter((m: any) => !existingIds.has(m.id));
+            return [...newMsgs, ...prev];
+          });
+        }
+        setHasMore(result.data.length === limit);
       }
     } catch (e) {
       console.warn('Failed to fetch messages', e);
     }
   }, []);
+
+  const handleLoadMore = async () => {
+    if (!selectedUser || isLoadingMore) return;
+    setIsLoadingMore(true);
+    await fetchMessages(selectedUser.user_id, messages.length);
+    setIsLoadingMore(false);
+  };
+
+  const clearChat = async () => {
+    if (!selectedUser) return;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_chat', product_id: selectedUser.user_id })
+      });
+      if (res.ok) {
+        setMessages([]);
+        fetchConversations();
+        setIsDeleteModalOpen(false);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
 
   useEffect(() => {
     if (!selectedUser) return;
@@ -118,6 +172,9 @@ export default function AdminChatPanel() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'mark_read', product_id: selectedUser.user_id })
     }).catch(console.warn);
+
+    // Optimistically clear unread badge for this user
+    setConversations(prev => prev.map(c => c.user_id === selectedUser.user_id ? { ...c, unread: 0 } : c));
 
     return () => {
       supabase.removeChannel(channel);
@@ -324,18 +381,30 @@ export default function AdminChatPanel() {
                   <span className="text-[10px] text-slate-400 font-semibold">Online</span>
                 </div>
               </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                title="Hapus riwayat obrolan ini"
+                className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+              {hasMore && (
+                <div className="flex justify-center mb-4">
+                  <button 
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1 rounded-full font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoadingMore ? 'Memuat...' : 'Tampilkan pesan sebelumnya'}
+                  </button>
+                </div>
+              )}
               {messages.map((msg, idx) => (
                 <div key={msg.id || idx} className={`flex flex-col ${msg.sender_role === 'ADMIN' ? 'items-end' : 'items-start'}`}>
-                  {msg.sender_role !== 'ADMIN' && (
-                    <span className="text-[9px] font-bold text-slate-500 mb-1 ml-1">User</span>
-                  )}
-                  {msg.sender_role === 'ADMIN' && (
-                    <span className="text-[9px] font-bold text-pink-500 mb-1 mr-1">Admin</span>
-                  )}
                   <div
                     className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
                       msg.sender_role === 'ADMIN'
@@ -347,18 +416,24 @@ export default function AdminChatPanel() {
                       (() => {
                         const [prodStr, textStr] = msg.content.split(':::');
                         const parts = prodStr.split('|');
+                        const pId = parts[1];
                         const pName = parts[2];
                         const pImg = parts[3];
                         const pPrice = parts[4]?.replace(']', '');
                         return (
                           <div className="flex flex-col gap-2">
-                            <div className={`flex items-center gap-3 p-2 rounded-xl border ${msg.sender_role === 'ADMIN' ? 'bg-white/20 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-slate-800'}`}>
+                            <a 
+                              href={`/product/${pId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-3 p-2 rounded-xl border hover:opacity-90 transition-opacity cursor-pointer ${msg.sender_role === 'ADMIN' ? 'bg-white/20 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-slate-800'}`}
+                            >
                               {pImg && <img src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover bg-white shrink-0" />}
                               <div className="min-w-0 flex-1">
                                 <p className="font-bold text-[11px] leading-tight mb-0.5 truncate">{pName || 'Produk'}</p>
                                 <p className="text-[10px] font-semibold opacity-90">Rp {Number(pPrice || 0).toLocaleString('id-ID')}</p>
                               </div>
-                            </div>
+                            </a>
                             {textStr && <p className="text-xs break-words">{textStr}</p>}
                           </div>
                         );
@@ -468,6 +543,35 @@ export default function AdminChatPanel() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-center font-bold text-slate-800 text-lg mb-2">Hapus Riwayat Chat?</h3>
+            <p className="text-center text-sm text-slate-500 mb-6">
+              Apakah Anda yakin ingin menghapus obrolan ini secara permanen? Pesan yang dihapus tidak dapat dikembalikan.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={clearChat}
+                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition-colors cursor-pointer shadow-sm shadow-red-500/30"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
