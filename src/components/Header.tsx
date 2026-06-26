@@ -171,12 +171,12 @@ export default function Header() {
         onClick={() => window.dispatchEvent(new Event('navbar_interaction'))}
         initial={{ y: "-100%" }}
         animate={{ y: isVisible ? "0%" : "-150%" }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 left-0 right-0 w-full z-40 pt-2 pb-0 sm:py-4 px-4"
+        transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
+        className="fixed top-0 left-0 right-0 w-full z-40 pt-2 pb-0 sm:py-4 px-4 will-change-transform"
       >
         <div className="max-w-6xl mx-auto">
           {/* Main Navbar Container (Floating Pill Style) */}
-          <div className="bg-[#0A0F1D]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl md:rounded-[2rem] overflow-hidden">
+          <div className="bg-[#0A0F1D]/90 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl md:rounded-[2rem] overflow-hidden">
             {/* Admin Bar (if admin) */}
             {isAdmin && (
               <div className="w-full bg-slate-900 border-b border-pink-500/30 text-white flex items-center transition-all duration-300">
@@ -331,9 +331,10 @@ export default function Header() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-[85px] left-4 right-4 max-w-6xl mx-auto pointer-events-auto md:hidden"
+              transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+              className="absolute top-[85px] left-4 right-4 max-w-6xl mx-auto pointer-events-auto md:hidden will-change-transform"
             >
-              <div className="bg-[#0A0F1D]/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-4 flex flex-col gap-2">
+              <div className="bg-[#0A0F1D]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl p-4 flex flex-col gap-2">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.path || (link.path === "/#faq" && false);
                   return (

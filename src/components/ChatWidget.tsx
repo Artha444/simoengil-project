@@ -203,6 +203,45 @@ export function ChatWidget() {
     }
   }, [isOpen, sessionId]);
 
+  // Handle scroll lock based on interactions and mobile state
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (!isOpen) {
+        document.body.style.overflow = 'auto';
+        return;
+      }
+      
+      const isMobile = window.innerWidth < 640;
+      if (isExpanded && isMobile) {
+        document.body.style.overflow = 'hidden';
+        return;
+      }
+
+      const chatWidget = document.getElementById('simoengil-chat-widget');
+      if (chatWidget && chatWidget.contains(e.target as Node)) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'auto';
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleGlobalClick);
+      const isMobile = window.innerWidth < 640;
+      if (isExpanded && isMobile) {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleGlobalClick);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen, isExpanded]);
+
+
   const clearChat = async () => {
     if (!sessionId) return;
     try {
@@ -337,13 +376,14 @@ export function ChatWidget() {
         {isOpen && (
           <motion.div
             layout
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            id="simoengil-chat-widget"
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20, transition: { duration: 0.2 } }}
-            transition={{ type: "spring", bounce: 0.35, duration: 0.6 }}
-            className={`fixed bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 flex flex-col overflow-hidden origin-bottom-right ${
+            exit={{ opacity: 0, scale: 0.9, y: 10, transition: { duration: 0.2 } }}
+            transition={{ type: "tween", ease: "easeOut", duration: 0.25 }}
+            className={`fixed bg-white shadow-2xl z-50 flex flex-col overflow-hidden origin-bottom-right will-change-transform ${
               isExpanded
-                ? 'inset-0 w-full h-full rounded-none border-0 sm:border sm:border-slate-100 sm:top-24 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[50vw] sm:rounded-3xl'
+                ? 'inset-0 w-full h-full rounded-none border-0 sm:border sm:border-slate-100 sm:top-32 sm:bottom-28 sm:h-auto sm:right-6 sm:left-auto sm:w-[400px] lg:w-[50vw] sm:rounded-3xl'
                 : 'bottom-24 right-6 w-[calc(100vw-48px)] sm:w-[400px] rounded-3xl border border-slate-100'
             }`}
             style={!isExpanded ? { height: '540px', maxHeight: '75vh' } : {}}

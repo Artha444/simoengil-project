@@ -26,6 +26,18 @@
   --animate-wiggle: wiggle 0.6s ease-in-out infinite;
   --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
   --animate-heart-burst: heart-burst 0.5s ease-out forwards;
+  --animate-peek: peek 6s ease-in-out infinite;
+  --animate-peek-alert: peek-alert 6s ease-in-out infinite;
+  
+  @keyframes peek {
+    0%, 80%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+    85%, 95% { transform: translateY(-24px) translateX(-12px) rotate(-8deg); }
+  }
+  
+  @keyframes peek-alert {
+    0%, 80%, 100% { opacity: 0; transform: scale(0.5) rotate(12deg); }
+    85%, 95% { opacity: 1; transform: scale(1) rotate(12deg); }
+  }
   
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(0deg); }

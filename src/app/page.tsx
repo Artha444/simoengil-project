@@ -528,12 +528,30 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 gsap-hero-ctas">
-              <Link
-                href="/products"
-                className="w-full sm:w-auto px-8 py-4 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white font-extrabold rounded-2xl text-center shadow-lg shadow-[#FF8FB1]/20 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer btn-premium-hover"
-              >
-                Lihat Koleksi Boneka
-              </Link>
+              <div className="relative group inline-block">
+                {/* Floating Taekwondo Doll Hiding Behind */}
+                <div className="absolute -left-2 -top-6 w-16 h-16 sm:w-20 sm:h-20 z-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-10 group-hover:-translate-x-6 group-hover:-rotate-12 origin-bottom">
+                  <div className="relative w-full h-full animate-peek group-hover:animate-none">
+                    <img 
+                      src="/images/boneka3.png" 
+                      alt="Boneka Taekwondo" 
+                      onError={(e) => { e.currentTarget.src = '/images/boneka3.png' }}
+                      className="w-full h-full object-contain drop-shadow-md"
+                    />
+                    {/* Exclamation Mark */}
+                    <div className="absolute top-0 right-2 sm:right-3 text-3xl sm:text-4xl font-black text-[#FF5280] drop-shadow-[0_2px_4px_rgba(255,82,128,0.5)] opacity-0 scale-50 transition-all duration-300 animate-peek-alert group-hover:animate-none group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-12 z-20">
+                      !
+                    </div>
+                  </div>
+                </div>
+                
+                <Link
+                  href="/products"
+                  className="relative z-10 block w-full sm:w-auto px-8 py-4 bg-[#FF8FB1] hover:bg-[#FF8FB1]/90 text-white font-extrabold rounded-2xl text-center shadow-lg shadow-[#FF8FB1]/20 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer btn-premium-hover"
+                >
+                  Lihat Koleksi Boneka
+                </Link>
+              </div>
 
               <a
                 href="#tentang"
