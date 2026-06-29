@@ -10,12 +10,14 @@ interface ProductCardProps {
   cartItemCount: number;
   onDetailClick: (product: Product) => void;
   index?: number;
+  animate?: boolean;
 }
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   cartItemCount,
   onDetailClick,
   index = 0,
+  animate = true,
 }) => {
   // Format price to IDR
   const formatIDR = (num: number) => {
@@ -87,11 +89,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div 
-      className="group relative bg-white rounded-2xl sm:rounded-[2.2rem] p-2 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2.5 transition-all duration-500 flex flex-col justify-between border border-slate-100 hover:border-slate-200 animate-in fade-in zoom-in slide-in-from-bottom-4 fill-mode-both"
-      style={{ animationDuration: '700ms', animationDelay: `${index * 100}ms` }}
+    <div
+      className="group relative bg-white rounded-2xl sm:rounded-[2.2rem] p-2 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-2.5 transition-all duration-500 flex flex-col justify-between border border-slate-100 hover:border-slate-200"
+      style={animate ? { animation: `cardBounce 0.8s ease-out ${index * 0.1}s both` } : undefined}
     >
-      {/* Badge Removed per request */}
+
 
       <div>
         {/* Product Image */}

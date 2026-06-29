@@ -297,18 +297,18 @@ export default function UserDashboard() {
       
       {/* Premium Top Navigation Bar */}
       <nav className="sticky top-0 w-full z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 h-16 grid grid-cols-3 items-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-pink-500 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-pink-500 transition-colors justify-self-start"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Kembali</span>
           </Link>
-          <div className="font-black text-lg tracking-tight bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text text-transparent">
+          <div className="font-black text-lg tracking-tight whitespace-nowrap text-center" style={{ color: '#FF8FB1' }}>
             Simoengil.
           </div>
-          <div className="w-20"></div> {/* Spacer for centering */}
+          <div></div>
         </div>
       </nav>
 

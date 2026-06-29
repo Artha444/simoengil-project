@@ -162,7 +162,7 @@ export default function Home() {
               price: Number(item.price),
               category: item.category,
               image: item.image,
-              status: item.status,
+
               description: item.description,
               rating: Number(item.rating || 5.0),
               reviewsCount: Number(item.reviews_count || 0),
@@ -409,11 +409,11 @@ export default function Home() {
     <div className="relative min-h-screen flex flex-col selection:bg-pink-100 selection:text-pink-600 bg-transparent font-sans text-slate-800">
       <GSAPInitializer />
       
-      {/* Dynamic Floating Background Elements (Illustrations) */}
+      {/* Animated Gradient Blobs Background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-white/40 blur-3xl" />
-        <div className="absolute top-[40%] -right-[10%] w-[35vw] h-[35vw] rounded-full bg-pink-200/20 blur-3xl" />
-        <div className="absolute bottom-[10%] left-[5%] w-[30vw] h-[30vw] rounded-full bg-orange-100/20 blur-3xl" />
+        <div className="absolute top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-gradient-to-br from-pink-100/50 via-white/40 to-transparent blur-3xl animate-drift-1" />
+        <div className="absolute top-[40%] -right-[10%] w-[35vw] h-[35vw] rounded-full bg-gradient-to-tr from-pink-200/25 via-orange-100/20 to-transparent blur-3xl animate-drift-2" />
+        <div className="absolute bottom-[10%] left-[5%] w-[30vw] h-[30vw] rounded-full bg-gradient-to-bl from-amber-100/30 via-pink-100/20 to-transparent blur-3xl animate-drift-3" />
       </div>
 
       {/* HEADER / NAVBAR */}
@@ -568,15 +568,19 @@ export default function Home() {
         ) : (
           /* Products Grid */
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4 md:gap-8">
-            {filteredProducts.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                index={index}
-                product={product}
-                cartItemCount={cart.filter(c => c.id === product.id).reduce((sum, c) => sum + c.quantity, 0)}
-                onDetailClick={handleProductDetailClick}
-              />
-            ))}
+            {(() => {
+              const filterKey = `${selectedCategory}-${searchQuery}-${sortBy}`;
+              return filteredProducts.map((product, index) => (
+                <ProductCard
+                  key={`${product.id}-${filterKey}`}
+                  index={index}
+                  product={product}
+                  animate={true}
+                  cartItemCount={cart.filter(c => c.id === product.id).reduce((sum, c) => sum + c.quantity, 0)}
+                  onDetailClick={handleProductDetailClick}
+                />
+              ));
+            })()}
           </div>
         )}
       </section>

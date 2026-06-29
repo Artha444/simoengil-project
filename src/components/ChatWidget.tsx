@@ -192,7 +192,11 @@ export function ChatWidget() {
   useEffect(() => {
     if (isOpen && sessionId) {
       setUnreadCount(0);
-      setTimeout(() => inputRef.current?.focus(), 200);
+      setTimeout(() => {
+        if (window.innerWidth >= 640) {
+          inputRef.current?.focus();
+        }
+      }, 200);
 
       // Mark Admin messages as read
       fetch('/api/chat', {
@@ -527,7 +531,6 @@ export function ChatWidget() {
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-pink-400"
-                  autoFocus
                 />
               </div>
               <div className="max-h-48 overflow-y-auto">

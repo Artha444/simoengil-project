@@ -21,11 +21,21 @@ import {
 import { Product, ProductVariant, PRODUCTS } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductDetailModal } from "@/components/ProductDetailModal";
+import dynamic from "next/dynamic";
 import FallingBoxesPhysics from "@/components/FallingBoxesPhysics";
 import { WishlistDrawer } from "@/components/WishlistDrawer";
 import { CartCelebration } from "@/components/CartCelebration";
 import { GSAPInitializer } from "@/components/GSAPInitializer";
-import Hero3DBoneka from "@/components/Hero3DBoneka";
+import { TextRotator } from "@/components/TextRotator";
+
+const Hero3DBoneka = dynamic(() => import("@/components/Hero3DBoneka"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-[82%] h-[82%] flex items-center justify-center">
+      <div className="w-[60%] aspect-square rounded-full bg-gradient-to-br from-pink-100/60 via-white/30 to-transparent animate-pulse" />
+    </div>
+  ),
+});
 
 import { OrderTrackingModal } from "@/components/OrderTrackingModal";
 import AuthModal from "@/components/AuthModal";
@@ -90,6 +100,8 @@ export default function Home() {
   const drawerCartIconRef = useRef<HTMLDivElement | null>(null);
   const [celebrateTrigger, setCelebrateTrigger] = useState(false);
   const [celebrateProductImage, setCelebrateProductImage] = useState<string | undefined>();
+  const [showFallingBoxes, setShowFallingBoxes] = useState(false);
+  const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   const handleCelebrate = (productImage?: string) => {
     setCelebrateProductImage(productImage);
@@ -194,7 +206,7 @@ export default function Home() {
               price: Number(item.price),
               category: item.category,
               image: item.image,
-              status: item.status,
+
               description: item.description,
               rating: Number(item.rating || 5.0),
               reviewsCount: Number(item.reviews_count || 0),
@@ -343,6 +355,22 @@ export default function Home() {
     };
   }, []);
 
+  // Spawn falling boxes only on mobile after hero title scrolls out of view
+  useEffect(() => {
+    if (window.innerWidth >= 768) return;
+    const el = heroTitleRef.current;
+    if (!el) return;
+
+    setShowFallingBoxes(el.getBoundingClientRect().bottom < 0);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowFallingBoxes(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Sync cart to localStorage
   const handleUpdateCartQuantity = (cartItemId: string, delta: number) => {
     let updatedCart = cart.map((item) => {
@@ -473,11 +501,11 @@ export default function Home() {
     <div className="relative min-h-screen flex flex-col selection:bg-pink-100 selection:text-pink-600 bg-transparent font-sans text-slate-800">
       <GSAPInitializer />
 
-      {/* Dynamic Floating Background Elements (Illustrations) */}
+      {/* Animated Gradient Blobs Background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-white/40 blur-3xl" />
-        <div className="absolute top-[40%] -right-[10%] w-[35vw] h-[35vw] rounded-full bg-pink-200/20 blur-3xl" />
-        <div className="absolute bottom-[10%] left-[5%] w-[30vw] h-[30vw] rounded-full bg-orange-100/20 blur-3xl" />
+        <div className="absolute top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-gradient-to-br from-pink-100/50 via-white/40 to-transparent blur-3xl animate-drift-1" />
+        <div className="absolute top-[40%] -right-[10%] w-[35vw] h-[35vw] rounded-full bg-gradient-to-tr from-pink-200/25 via-orange-100/20 to-transparent blur-3xl animate-drift-2" />
+        <div className="absolute bottom-[10%] left-[5%] w-[30vw] h-[30vw] rounded-full bg-gradient-to-bl from-amber-100/30 via-pink-100/20 to-transparent blur-3xl animate-drift-3" />
       </div>
 
       {/* HEADER / NAVBAR */}
@@ -485,7 +513,7 @@ export default function Home() {
       <main className="flex-1 w-full overflow-x-hidden">
         {/* HERO SECTION */}
         <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 md:pt-32 md:pb-28 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-8">
-          <FallingBoxesPhysics />
+          <FallingBoxesPhysics active={showFallingBoxes} />
           
           {/* Hero Info */}
           <div className="w-full lg:w-1/2 text-center lg:text-left space-y-8 relative z-10">
@@ -494,16 +522,15 @@ export default function Home() {
               <span>Boneka Flanel Premium Lokal</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-[#2C2C2C] tracking-tight leading-[1.15] font-heading gsap-hero-title">
+            <h1 ref={heroTitleRef} className="text-4xl sm:text-5xl md:text-6xl font-black text-[#2C2C2C] tracking-tight leading-[1.15] font-heading gsap-hero-title">
               Boneka Flanel Lembut <br />
               <span className="text-[#FF8FB1]">
-                Buat Si Kecil & Kado Spesial
+                Buat Si Kecil & <TextRotator />
               </span>
             </h1>
 
             <p className="text-slate-600 text-sm sm:text-base md:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium gsap-hero-subtitle">
-              Boneka flanel super lembut, handmade dengan penuh sayang. Cocok
-              untuk pelukan anak, kado ulang tahun, wisuda, atau hadiah untuk
+              Boneka flanel super lembut, handmade dengan penuh teliti. Cocok untuk kado ulang tahun, wisuda, atau hadiah untuk
               orang tersayang.
             </p>
 
@@ -529,18 +556,24 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 gsap-hero-ctas">
               <div className="relative group inline-block">
-                {/* Floating Taekwondo Doll Hiding Behind */}
-                <div className="absolute -left-2 -top-6 w-16 h-16 sm:w-20 sm:h-20 z-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-10 group-hover:-translate-x-6 group-hover:-rotate-12 origin-bottom">
+                {/* Floating Boneka Sembunyi — Peeking from Behind */}
+                <div className="absolute -left-2 -top-6 w-16 h-16 sm:w-20 sm:h-20 z-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-8 group-hover:-translate-x-3 group-hover:-rotate-6 group-hover:scale-110 origin-bottom">
+                  {/* Shadow that follows the doll */}
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-2 bg-black/10 rounded-full blur-sm transition-all duration-500 group-hover:w-10 group-hover:-translate-y-2 group-hover:bg-black/20" />
+                  {/* Peek wrapper — stops on hover, lets jiggle take over */}
                   <div className="relative w-full h-full animate-peek group-hover:animate-none">
-                    <img 
-                      src="/images/boneka3.png" 
-                      alt="Boneka Taekwondo" 
-                      onError={(e) => { e.currentTarget.src = '/images/boneka3.png' }}
-                      className="w-full h-full object-contain drop-shadow-md"
-                    />
-                    {/* Exclamation Mark */}
-                    <div className="absolute top-0 right-2 sm:right-3 text-3xl sm:text-4xl font-black text-[#FF5280] drop-shadow-[0_2px_4px_rgba(255,82,128,0.5)] opacity-0 scale-50 transition-all duration-300 animate-peek-alert group-hover:animate-none group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-12 z-20">
-                      !
+                    {/* Jiggle wrapper — active only on hover */}
+                    <div className="relative w-full h-full group-hover:animate-jiggle">
+                      <img 
+                        src="/images/boneka3.png" 
+                        alt="Boneka Taekwondo" 
+                        onError={(e) => { e.currentTarget.src = '/images/boneka3.png' }}
+                        className="w-full h-full object-contain drop-shadow-md transition-all duration-500 group-hover:drop-shadow-[0_8px_16px_rgba(255,143,177,0.4)]"
+                      />
+                      {/* Exclamation Mark */}
+                      <div className="absolute -top-1 -right-1 text-2xl sm:text-3xl font-black text-[#FF5280] drop-shadow-[0_2px_4px_rgba(255,82,128,0.5)] opacity-0 scale-50 transition-all duration-300 animate-peek-alert group-hover:animate-none group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-12 z-20 pointer-events-none">
+                        !
+                      </div>
                     </div>
                   </div>
                 </div>

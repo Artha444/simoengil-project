@@ -165,6 +165,9 @@ export default function Header() {
     return null;
   }
 
+  // Hide global header on product detail page
+  if (pathname.startsWith('/product/')) return null;
+
   return (
     <>
       <motion.header

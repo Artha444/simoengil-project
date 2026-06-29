@@ -3,7 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
-export default function FallingBoxesPhysics() {
+interface FallingBoxesPhysicsProps {
+  active?: boolean;
+}
+
+export default function FallingBoxesPhysics({ active = true }: FallingBoxesPhysicsProps) {
   const sceneRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -14,7 +18,7 @@ export default function FallingBoxesPhysics() {
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !sceneRef.current) return;
+    if (!isLoaded || !sceneRef.current || !active) return;
 
     const Matter = (window as any).Matter;
     if (!Matter) return;
@@ -28,11 +32,16 @@ export default function FallingBoxesPhysics() {
       Composite = Matter.Composite,
       Bodies = Matter.Bodies;
 
-    // Create engine
-    const engine = Engine.create();
+    // Create engine with sleep enabled so idle boxes don't drain CPU
+    const engine = Engine.create({
+      enableSleeping: true,
+    });
     
     const width = sceneRef.current.clientWidth;
     const height = sceneRef.current.clientHeight;
+
+    // Cap pixel ratio at 2 — retina 3x is wasteful for decorative boxes
+    const cappedPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
     // Create renderer
     const render = Render.create({
@@ -43,7 +52,7 @@ export default function FallingBoxesPhysics() {
         height: height,
         background: "transparent",
         wireframes: false,
-        pixelRatio: window.devicePixelRatio || 1,
+        pixelRatio: cappedPixelRatio,
       },
     });
 
@@ -61,33 +70,7 @@ export default function FallingBoxesPhysics() {
     const colors = ["#FFB6C8", "#FF8FB1", "#E8B37D", "#FFF5F0", "#a5f3fc", "#fbcfe8", "#d8b4fe"];
     const texts = ["Simoengil", "Lucu", "Handmade", "Kuat", "Rapih", "Aman", "Gemoy"];
     
-    const items: any[] = [];
-    const numItems = Math.min(Math.floor(width / 80), 30); // Max 20 items
-    
-    for (let i = 0; i < numItems; i++) {
-      const x = Math.random() * width;
-      // Spawn boxes just below the ceiling (which is at y=-25, spanning to y=0)
-      // We stagger them a bit so they fall naturally
-      const y = Math.random() * (height / 2) + 50; 
-      
-      const text = texts[Math.floor(Math.random() * texts.length)];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      // We make the rectangle wide enough to hold the text
-      const boxWidth = text.length * 15 + 40;
-      const boxHeight = 50;
-
-      items.push(
-        Bodies.rectangle(x, y, boxWidth, boxHeight, {
-          restitution: 0.8,
-          chamfer: { radius: 25 }, // pill shape
-          label: text, // custom label for text rendering
-          render: { fillStyle: color, strokeStyle: '#ffffff', lineWidth: 3 },
-        })
-      );
-    }
-
-    // Create boundaries
+    // Create boundaries first (static, zero cost)
     const wallOptions = { 
       isStatic: true, 
       render: { visible: false } 
@@ -98,15 +81,46 @@ export default function FallingBoxesPhysics() {
     const rightWall = Bodies.rectangle(width + 25, height / 2, 50, height * 2, wallOptions);
     const ceiling = Bodies.rectangle(width / 2, -25, width, 50, wallOptions);
 
-    Composite.add(engine.world, [...items, ground, leftWall, rightWall, ceiling]);
+    Composite.add(engine.world, [ground, leftWall, rightWall, ceiling]);
+
+    // Spawn boxes in staggered batches so physics doesn't spike
+    const items: any[] = [];
+    const numItems = Math.min(Math.floor(width / 80), 24);
+    const batchSize = 4;
+    let spawnIndex = 0;
+
+    function spawnNextBatch() {
+      const remaining = numItems - spawnIndex;
+      if (remaining <= 0) return;
+
+      const count = Math.min(batchSize, remaining);
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * (height / 2) + 50;
+        const text = texts[Math.floor(Math.random() * texts.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const boxWidth = text.length * 15 + 40;
+        const boxHeight = 50;
+
+        const body = Bodies.rectangle(x, y, boxWidth, boxHeight, {
+          restitution: 0.8,
+          chamfer: { radius: 25 },
+          label: text,
+          render: { fillStyle: color, strokeStyle: '#ffffff', lineWidth: 3 },
+        });
+        items.push(body);
+        Composite.add(engine.world, body);
+        spawnIndex++;
+      }
+    }
+
+    // First batch immediately, then rest staggered
+    spawnNextBatch();
+    const spawnTimer = setInterval(spawnNextBatch, 250);
 
     // Add mouse control normally
     const mouse = Mouse.create(render.canvas);
-    
-    // Explicitly sync pixel ratio to prevent massive coordinate offsets on Retina/scaled displays
-    const currentPixelRatio = window.devicePixelRatio || 1;
-    mouse.pixelRatio = currentPixelRatio;
-    render.canvas.setAttribute('data-pixel-ratio', String(currentPixelRatio));
+    mouse.pixelRatio = cappedPixelRatio; // must match render pixelRatio for correct hit detection
     render.canvas.style.pointerEvents = 'auto'; // Explicitly set for the canvas
     
     // Prevent scrolling issues
@@ -168,9 +182,8 @@ export default function FallingBoxesPhysics() {
       const newHeight = sceneRef.current.clientHeight;
 
       // Fix coordinate offset on resize by keeping pixelRatio intact
-      const pixelRatio = window.devicePixelRatio || 1;
-      render.canvas.width = newWidth * pixelRatio;
-      render.canvas.height = newHeight * pixelRatio;
+      render.canvas.width = newWidth * cappedPixelRatio;
+      render.canvas.height = newHeight * cappedPixelRatio;
       render.canvas.style.width = newWidth + "px";
       render.canvas.style.height = newHeight + "px";
       
@@ -186,6 +199,7 @@ export default function FallingBoxesPhysics() {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      clearInterval(spawnTimer);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', mouse.mousemove as EventListener);
       window.removeEventListener('mouseup', mouse.mouseup as EventListener);
@@ -195,7 +209,7 @@ export default function FallingBoxesPhysics() {
       Engine.clear(engine);
       render.canvas.remove();
     };
-  }, [isLoaded]);
+  }, [isLoaded, active]);
 
   return (
     <>

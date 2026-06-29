@@ -102,7 +102,6 @@ export default function AdminDashboardPage() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Boneka Beruang');
   const [imageUrl, setImageUrl] = useState('');
-  const [status, setStatus] = useState<'Best Seller' | 'Stok Terbatas' | 'Baru' | 'Promo'>('Baru');
   const [description, setDescription] = useState('');
   const [formTypes, setFormTypes] = useState<ProductType[]>([]);
   const [formSizes, setFormSizes] = useState<ProductSize[]>([]);
@@ -205,7 +204,7 @@ export default function AdminDashboardPage() {
             price: Number(item.price),
             category: item.category,
             image: item.image,
-            status: item.status,
+
             description: item.description,
             rating: Number(item.rating || 5.0),
             reviewsCount: Number(item.reviews_count || 0),
@@ -333,7 +332,6 @@ export default function AdminDashboardPage() {
     setPrice('');
     setCategory('Boneka Beruang');
     setImageUrl('');
-    setStatus('Baru');
     setDescription('');
     setFormTypes([]);
     setFormSizes([]);
@@ -437,7 +435,6 @@ export default function AdminDashboardPage() {
       price: Number(price),
       category,
       image: imageUrl,
-      status,
       description,
       rating: Number(rating),
       reviews_count: Number(reviewsCount),
@@ -469,7 +466,6 @@ export default function AdminDashboardPage() {
         price: productData.price,
         category: productData.category,
         image: productData.image,
-        status: productData.status,
         description: productData.description,
         rating: productData.rating,
         reviews_count: productData.reviews_count,
@@ -560,7 +556,6 @@ export default function AdminDashboardPage() {
     setPrice(String(p.price));
     setCategory(p.category);
     setImageUrl(p.image);
-    setStatus(p.status);
     setDescription(p.description);
     setRating(String(p.rating || 5.0));
     setReviewsCount(String(p.reviewsCount || 0));
@@ -761,60 +756,64 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Table wrapper */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm bg-white">
                 <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/30">
-                      <th className="py-2.5 px-4">Boneka</th>
-                      <th className="py-2.5 px-4">Kategori</th>
-                      <th className="py-2.5 px-4">Harga Dasar</th>
-                      <th className="py-2.5 px-4 text-right">Aksi</th>
+                    <tr className="border-b border-slate-100 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider bg-slate-50/80">
+                      <th className="py-3.5 px-5">Boneka</th>
+                      <th className="py-3.5 px-5">Kategori</th>
+                      <th className="py-3.5 px-5">Harga Dasar</th>
+                      <th className="py-3.5 px-5 text-right">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
+                  <tbody className="divide-y divide-slate-100 text-sm font-medium">
                     {products.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
-                          Tidak ada produk di database. Tambah produk pertama Anda di panel samping.
+                        <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
+                          Tidak ada produk di database. Tambah produk pertama Anda di atas.
                         </td>
                       </tr>
                     ) : (
                       products.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                        <tr key={p.id} className="hover:bg-pink-50/30 transition-colors group">
                           {/* Doll Item Info */}
-                          <td className="py-2.5 px-4 flex items-center gap-2.5">
-                            <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
-                              <Image src={p.image} alt={p.name} fill sizes="32px" className="object-cover" />
+                          <td className="py-3.5 px-5 flex items-center gap-3">
+                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white border border-slate-100 shadow-xs shrink-0 group-hover:border-pink-200 transition-colors">
+                              <Image src={p.image} alt={p.name} fill sizes="40px" className="object-cover" />
                             </div>
-                            <span className="font-bold text-slate-800 line-clamp-1">{p.name}</span>
+                            <span className="font-bold text-slate-700 line-clamp-1">{p.name}</span>
                           </td>
 
                           {/* Category */}
-                          <td className="py-2.5 px-4 font-semibold text-slate-500">
-                            {p.category}
+                          <td className="py-3.5 px-5">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600">
+                              {p.category}
+                            </span>
                           </td>
 
                           {/* Base Price */}
-                          <td className="py-2.5 px-4 font-extrabold text-slate-700">
+                          <td className="py-3.5 px-5 font-black text-slate-800">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.price)}
                           </td>
 
                           {/* Actions */}
-                          <td className="py-2.5 px-4 text-right space-x-1.5">
-                            <button
-                              onClick={() => handleEditProduct(p)}
-                              className="p-2 bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-500 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Boneka"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(p.id)}
-                              className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-                              title="Hapus Boneka"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          <td className="py-3.5 px-5">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleEditProduct(p)}
+                                className="p-2 bg-white border border-slate-200 hover:border-pink-300 hover:bg-pink-50 text-slate-500 hover:text-pink-600 rounded-lg transition-all cursor-pointer shadow-xs"
+                                title="Edit Boneka"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(p.id)}
+                                className="p-2 bg-white border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-all cursor-pointer shadow-xs"
+                                title="Hapus Boneka"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -829,24 +828,27 @@ export default function AdminDashboardPage() {
           {isProductModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 sm:p-6 backdrop-blur-sm">
             <div className="relative w-full max-w-3xl animate-in fade-in zoom-in-95 duration-200">
-              {/* Close Button Outside */}
-              <button 
-                onClick={() => setIsProductModalOpen(false)} 
-                className="absolute -top-12 right-0 md:-right-12 md:top-0 p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white cursor-pointer transition-colors z-10"
-                title="Tutup Form"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-2xl p-4 space-y-4 w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white border border-slate-200/80 rounded-[2rem] overflow-hidden shadow-2xl w-full max-h-[90vh] flex flex-col">
               
-              {/* Form Title */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-pink-500" />
+              {/* Form Title & Sticky Header */}
+              <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2.5">
+                  <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
+                    <PlusCircle className="w-5 h-5" />
+                  </div>
                   {editingId ? 'Simpan Perubahan Boneka' : 'Tambah Boneka Baru'}
                 </h3>
+                <button 
+                  onClick={() => setIsProductModalOpen(false)} 
+                  className="p-2.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full cursor-pointer transition-colors"
+                  title="Tutup Form"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
+
+              {/* Form Scrollable Area */}
+              <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
 
               {/* Form inputs */}
               <form onSubmit={handleSaveProduct} className="space-y-3">
@@ -983,46 +985,29 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* Image URL & Status Tag */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Gambar Utama Produk
-                    </label>
-                    <div className="flex items-center gap-2 w-full">
+                {/* Image URL */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    Gambar Utama Produk
+                  </label>
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      required
+                      placeholder="/images/plushie_teddy.png"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
+                    />
+                    <label title="Upload Foto" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                      <Upload className="w-4 h-4" />
                       <input
-                        type="text"
-                        required
-                        placeholder="/images/plushie_teddy.png"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, setImageUrl)}
                       />
-                      <label title="Upload Foto" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
-                        <Upload className="w-4 h-4" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(e, setImageUrl)}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                      Status Promo / Tag
                     </label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    >
-                      <option value="Baru">Baru</option>
-                      <option value="Best Seller">Best Seller</option>
-                      <option value="Stok Terbatas">Stok Terbatas</option>
-                      <option value="Promo">Promo</option>
-                    </select>
                   </div>
                 </div>
 
@@ -1572,6 +1557,7 @@ export default function AdminDashboardPage() {
                   )}
                 </button>
               </form>
+              </div>
             </div>
             </div>
           </div>

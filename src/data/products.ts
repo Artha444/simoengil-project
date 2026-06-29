@@ -54,7 +54,6 @@ export interface Product {
   price: number;
   category: string;
   image: string;
-  status: 'Best Seller' | 'Stok Terbatas' | 'Baru' | 'Promo';
   description: string;
   rating: number;
   reviewsCount: number;
@@ -74,7 +73,6 @@ export const PRODUCTS: Product[] = [
     price: 89000,
     category: 'Boneka Beruang',
     image: '/images/plushie_teddy.png',
-    status: 'Best Seller',
     description: 'Boneka Teddy Bear klasik berwarna cokelat hangat dengan bulu super halus dan empuk. Sangat cocok menemani tidur Anda atau dijadikan kado manis untuk orang tersayang.',
     rating: 4.9,
     reviewsCount: 142,
@@ -124,7 +122,6 @@ export const PRODUCTS: Product[] = [
     price: 95000,
     category: 'Boneka Beruang',
     image: '/images/plushie_bunny.png',
-    status: 'Best Seller',
     description: 'Boneka kelinci lucu berwarna pink pastel dengan telinga panjang yang sangat lembut saat diraba. Didesain khusus agar nyaman dipeluk erat oleh si kecil maupun dewasa.',
     rating: 4.8,
     reviewsCount: 96,
@@ -157,7 +154,6 @@ export const PRODUCTS: Product[] = [
     price: 110000,
     category: 'Boneka Beruang',
     image: '/images/plushie_dino.png',
-    status: 'Stok Terbatas',
     description: 'Boneka dinosaurus bayi berwarna hijau cerah dengan ornamen gerigi kuning lembut di punggungnya. Teman berpetualang yang tangguh namun sangat ramah pelukan!',
     rating: 5.0,
     reviewsCount: 64,
@@ -190,7 +186,6 @@ export const PRODUCTS: Product[] = [
     price: 79000,
     category: 'Boneka Beruang',
     image: '/images/plushie_neko.png',
-    status: 'Stok Terbatas',
     description: 'Boneka kucing putih bulat super squishy dengan tekstur selembut kue mochi. Sangat seru ditekan-tekan, empuk luar biasa, dan bisa berfungsi sebagai bantal leher nyaman.',
     rating: 4.7,
     reviewsCount: 81,
@@ -223,7 +218,6 @@ export const PRODUCTS: Product[] = [
     price: 125000,
     category: 'Kado Wisuda',
     image: '/images/plushie_grad_bear.png',
-    status: 'Baru',
     description: 'Teddy Bear spesial wisuda lengkap dengan topi toga hitam berkuncir dan gulungan ijazah dengan pita merah cantik. Hadiah kelulusan terbaik yang awet dan manis.',
     rating: 4.9,
     reviewsCount: 52,
@@ -257,7 +251,6 @@ export const PRODUCTS: Product[] = [
     price: 29000,
     category: 'Gantungan Kunci',
     image: '/images/plushie_keychain_bear.png',
-    status: 'Best Seller',
     description: 'Gantungan kunci boneka beruang mini yang sangat empuk dan berbulu lebat. Dilengkapi gantungan kunci logam anti karat kuat untuk tas ransel maupun kunci kendaraan.',
     rating: 4.9,
     reviewsCount: 215,
@@ -284,7 +277,6 @@ export const PRODUCTS: Product[] = [
     price: 29000,
     category: 'Gantungan Kunci',
     image: '/images/plushie_keychain_bunny.png',
-    status: 'Baru',
     description: 'Gantungan kunci boneka kelinci putih mini yang imut dengan detail telinga bagian dalam berwarna pink lembut. Menambah sentuhan gemas di tas sekolah atau ransel kerjamu.',
     rating: 4.7,
     reviewsCount: 38,

@@ -104,6 +104,9 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
     window.addEventListener("cart_updated", loadCart);
 
+    // Force scroll to top on mount
+    window.scrollTo(0, 0);
+
     // 2. Fetch specific product
     const fetchProduct = async () => {
       setLoading(true);
@@ -124,7 +127,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             price: Number(data.price),
             category: data.category,
             image: data.image,
-            status: data.status,
+
             description: data.description,
             rating: Number(data.rating || 5.0),
             reviewsCount: Number(data.reviews_count || 0),
@@ -241,7 +244,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               price: Number(item.price),
               category: item.category,
               image: item.image,
-              status: item.status,
+
               description: item.description,
               rating: Number(item.rating || 5.0),
               reviewsCount: Number(item.reviews_count || 0),
@@ -578,35 +581,34 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         <div className="absolute bottom-[20%] left-[5%] w-[25vw] h-[25vw] rounded-full bg-orange-100/20 blur-3xl" />
       </div>
 
-      {/* HEADER / NAVBAR */}
-
-      <main className="relative z-10 w-full px-4 sm:px-6 lg:px-8 pt-8 flex-1 overflow-x-hidden">
-        {/* Navigation Breadcrumb & Back button */}
-        <div className="flex items-center justify-between mb-8">
+      {/* PRODUCT DETAIL NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm px-4 py-3 sm:px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
             href="/products"
-            className="inline-flex items-center gap-2.5 text-sm font-bold text-slate-500 hover:text-[#FF8FB1] transition-colors group"
+            className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-[#FF8FB1] transition-colors group"
           >
-            <div className="p-2.5 rounded-xl bg-white shadow-xs group-hover:shadow-md border border-[#FFB6C8]/10 group-hover:border-[#FFB6C8]/30 transition-all">
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <div className="p-2 rounded-xl bg-slate-50 group-hover:bg-white shadow-xs group-hover:shadow-sm border border-transparent group-hover:border-[#FFB6C8]/30 transition-all">
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
             </div>
-            <span className="font-heading">Kembali</span>
+            <span className="font-heading hidden sm:inline">Kembali</span>
           </Link>
-
-          <div className="flex items-center gap-2">
-            {/* Share */}
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert("Tautan halaman berhasil disalin!");
-              }}
-              className="p-2.5 rounded-xl bg-white shadow-xs border border-[#FFB6C8]/10 hover:border-[#FFB6C8]/30 text-slate-500 hover:text-[#FF8FB1] transition-all cursor-pointer hover:scale-105 active:scale-95"
-              title="Salin Tautan"
-            >
-              <Share2 className="w-4.5 h-4.5" />
-            </button>
-          </div>
+          
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert("Tautan halaman berhasil disalin!");
+            }}
+            className="p-2 rounded-xl bg-slate-50 hover:bg-white shadow-xs hover:shadow-sm border border-transparent hover:border-[#FFB6C8]/30 text-slate-600 hover:text-[#FF8FB1] transition-all cursor-pointer flex items-center gap-2"
+            title="Salin Tautan"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="text-sm font-bold hidden sm:inline">Bagikan</span>
+          </button>
         </div>
+      </header>
+
+      <main className="relative z-10 w-full px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 flex-1 overflow-x-hidden">
 
         {/* GSAP Text Animating Wrapper */}
         <GSAPInitializer />
@@ -692,7 +694,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             {/* RIGHT COLUMN: PRODUCT META & ORDER ACTIONS (55% Width) */}
             <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
               <div>
-                {/* Badges Removed per request */}
+
 
                 {/* Product Name */}
                 <h1 className="gsap-hero-title text-xl sm:text-2xl lg:text-3xl font-bold text-[#2C2C2C] mb-4 leading-tight">

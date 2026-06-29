@@ -299,7 +299,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         {/* Right Side: Details */}
         <div className="md:w-1/2 p-6 md:p-8 flex flex-col md:overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
           <div>
-            {/* Badges Removed per request */}
+
 
             {/* Title */}
             <h2 className="text-lg sm:text-xl font-bold text-[#2C2C2C] mb-2 leading-tight">

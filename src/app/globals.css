@@ -28,6 +28,10 @@
   --animate-heart-burst: heart-burst 0.5s ease-out forwards;
   --animate-peek: peek 6s ease-in-out infinite;
   --animate-peek-alert: peek-alert 6s ease-in-out infinite;
+  --animate-jiggle: jiggle 0.6s ease-in-out;
+  --animate-drift-1: gradient-drift-1 14s ease-in-out infinite;
+  --animate-drift-2: gradient-drift-2 18s ease-in-out infinite;
+  --animate-drift-3: gradient-drift-3 16s ease-in-out infinite;
   
   @keyframes peek {
     0%, 80%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
@@ -39,6 +43,15 @@
     85%, 95% { opacity: 1; transform: scale(1) rotate(12deg); }
   }
   
+  @keyframes jiggle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    15% { transform: translateY(-4px) rotate(-4deg); }
+    30% { transform: translateY(-2px) rotate(3deg); }
+    45% { transform: translateY(-3px) rotate(-2deg); }
+    60% { transform: translateY(-1px) rotate(1deg); }
+    75% { transform: translateY(-2px) rotate(-1deg); }
+  }
+
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-12px) rotate(2deg); }
@@ -68,6 +81,32 @@
     50% { transform: scale(1.4); }
     100% { transform: scale(1); }
   }
+  @keyframes gradient-drift-1 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    25% { transform: translate(30px, -20px) scale(1.15); opacity: 0.7; }
+    50% { transform: translate(-20px, 10px) scale(0.9); opacity: 0.6; }
+    75% { transform: translate(10px, 30px) scale(1.1); opacity: 0.8; }
+  }
+  @keyframes gradient-drift-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    25% { transform: translate(-25px, 15px) scale(1.1); opacity: 0.6; }
+    50% { transform: translate(20px, -25px) scale(0.95); opacity: 0.5; }
+    75% { transform: translate(-15px, -10px) scale(1.05); opacity: 0.7; }
+  }
+  @keyframes gradient-drift-3 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    25% { transform: translate(15px, 25px) scale(1.05); opacity: 0.6; }
+    50% { transform: translate(-30px, -15px) scale(1.1); opacity: 0.5; }
+    75% { transform: translate(20px, -20px) scale(0.9); opacity: 0.7; }
+  }
+}
+
+@keyframes cardBounce {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 1; transform: translateY(-18px); }
+  45% { opacity: 1; transform: translateY(6px); }
+  70% { opacity: 1; transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 :root {

@@ -140,7 +140,7 @@ function CheckoutContent() {
             price: Number(data.price),
             category: data.category,
             image: data.image,
-            status: data.status,
+
             description: data.description,
             rating: Number(data.rating || 5.0),
             reviewsCount: Number(data.reviews_count || 0),
