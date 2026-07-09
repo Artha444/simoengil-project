@@ -27,28 +27,7 @@ export default function Header() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const pathname = usePathname();
-
-  // Scroll detection for hiding/showing navbar
-  const [isVisible, setIsVisible] = useState(true);
-  const lastScrollY = React.useRef(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // If we scroll down past 50px, hide the navbar. If we scroll up, show it.
-      if (currentScrollY > 50 && currentScrollY > lastScrollY.current) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Load auth & cart state
   useEffect(() => {
@@ -172,9 +151,6 @@ export default function Header() {
     <>
       <motion.header
         onClick={() => window.dispatchEvent(new Event('navbar_interaction'))}
-        initial={{ y: "-100%" }}
-        animate={{ y: isVisible ? "0%" : "-150%" }}
-        transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
         className="fixed top-0 left-0 right-0 w-full z-40 pt-2 pb-0 sm:py-4 px-4 will-change-transform"
       >
         <div className="max-w-6xl mx-auto">
