@@ -34,6 +34,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import * as LucideIcons from "lucide-react";
 import TrustShowcase from "@/components/TrustShowcase";
+import { Editable } from "./Editable";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -179,6 +180,35 @@ export default function Home() {
     logoIcon: "Smile",
     logoImageType: "icon",
     logoImageUrl: "",
+    trustItems: [
+      {
+        image: "/images/3-Hand.jpeg",
+        title: "100% Jahitan Tangan",
+        description: "Setiap boneka kami dijahit dengan tangan, satu per satu, penuh ketelitian. Nggak ada mesin massal—cuma keterampilan dan kesabaran, supaya tiap jahitan kuat dan nggak gampang lepas.",
+      },
+      {
+        image: "/images/4-Ruler.jpeg",
+        title: "Detail Rapih & Kuat",
+        description: "Ukuran boneka flanel kami memang mungil, tapi detailnya nggak sembarangan. Setiap pola diukur presisi supaya proporsinya pas dan jahitannya tetap kuat meski sering dipeluk.",
+      },
+      {
+        image: "/images/1-Cardboard.jpeg",
+        title: "Packing Aman",
+        description: "Boneka diisi dakron premium yang empuk dan padat, lalu dikemas rapat dengan kardus tebal supaya aman sampai tujuan tanpa penyok, kotor, atau rusak di jalan.",
+      },
+      {
+        image: "/images/2-Truck.jpeg",
+        title: "Pengiriman Cepat",
+        description: "Begitu pesanan selesai dijahit, langsung kami kirim secepat mungkin—supaya boneka baru kamu nggak lama-lama menunggu di perjalanan.",
+      },
+    ],
+    story: {
+      title: "Boneka Flanel yang Dibuat dengan Kasih Sayang",
+      paragraph1: "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
+      paragraph2: "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
+      paragraph3: "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
+      quote: "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
+    },
   });
 
   // Load wishlist from localStorage on mount & Fetch Supabase products & Check Admin Auth
@@ -416,6 +446,27 @@ export default function Home() {
     localStorage.setItem("simoengil_cart", JSON.stringify(updatedCart));
   };
 
+  const handleSettingsSave = async (key: string, value: any): Promise<void> => {
+    // Optimistic UI update
+    const newSettings = { ...siteSettings, [key]: value };
+    setSiteSettings(newSettings);
+
+    // Persist to localStorage as cache
+    localStorage.setItem("simoengil_settings", JSON.stringify(newSettings));
+
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({ settings: newSettings })
+        .eq("id", "homepage");
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      // Silently fail — localStorage cache still works for the session
+    }
+  };
+
   // Filter products using dynamic productsList
   const filteredProducts = productsList
     .filter((product) => {
@@ -480,6 +531,17 @@ export default function Home() {
       a: "Ada garansi kualitas. Jika dalam 7 hari setelah terima ada cacat produksi (jahitan lepas, bahan robek, dll), silakan hubungi kami via WhatsApp untuk proses penggantian atau pengembalian.",
     },
   ];
+
+  // Safe derived story — guards against undefined if Supabase/localStorage
+  // merge doesn't include the story field.
+  const story: StoryContent = (siteSettings.story as StoryContent) ?? {
+    title: "Boneka Flanel yang Dibuat dengan Kasih Sayang",
+    paragraph1: "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
+    paragraph2: "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
+    paragraph3: "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
+    quote: "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
+  };
+
   return (
     <div className="relative min-h-screen flex flex-col selection:bg-orange-100 selection:text-orange-600 bg-transparent font-sans text-slate-800">
       <GSAPInitializer />
@@ -646,12 +708,18 @@ export default function Home() {
             {/* Hero Info Text Block (No Card Container to match image) */}
             <div ref={textRef} className="w-full md:w-[55%] lg:w-[50%] text-center md:text-left space-y-8 relative z-10 flex flex-col items-center md:items-start">
               
-              <h1 className="font-serif uppercase text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal text-[#1A1A1A] tracking-tight leading-[1.05] gsap-hero-title drop-shadow-[0_2px_10px_rgba(255,255,255,0.85)]">
-                BONEKA FLANEL IMUT.<br />
-                <span className="font-serif font-black text-[#D48C70] drop-shadow-[0_2px_10px_rgba(255,255,255,0.85)]">
-                  KADO PENUH KASIH.
-                </span>
-              </h1>
+              <Editable
+                isAdmin={isAdmin}
+                itemKey="heroTitle"
+                initialValue={siteSettings.heroTitle}
+                onSave={handleSettingsSave}
+                as="h1"
+                className="font-serif uppercase text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal text-[#1A1A1A] tracking-tight leading-[1.05] gsap-hero-title drop-shadow-[0_2px_10px_rgba(255,255,255,0.85)]"
+              >
+                {(value) => (
+                  <span dangerouslySetInnerHTML={{ __html: value }} />
+                )}
+              </Editable>
 
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-6 pt-4 w-full gsap-hero-ctas">
                 <div className="relative group inline-block w-full sm:w-auto">
@@ -714,19 +782,33 @@ export default function Home() {
               />
             </svg>
           </div>
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2A2320] leading-tight max-w-4xl mx-auto mb-6 tracking-tight drop-shadow-sm">
-            Dirangkai penuh cinta,<br />khusus untuk momen istimewanya.
-          </h2>
-          <p className="font-sans text-base md:text-lg text-[#5A4F49] max-w-3xl mx-auto leading-relaxed mb-10 font-medium">
-            Setiap boneka Simoengil dijahit sepenuhnya dengan tangan menggunakan material flanel premium. Tersedia ukuran 10cm dan 15cm yang mungil (tidak untuk dipeluk, cocok untuk gantungan & pajangan), serta 20cm yang pas di pelukan. Bebas alergi dan siap menjadi kado tak terlupakan.
-          </p>
+          <Editable
+            isAdmin={isAdmin}
+            itemKey="whyTitle"
+            initialValue={siteSettings.whyTitle}
+            onSave={handleSettingsSave}
+            as="h2"
+            className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#2A2320] leading-tight max-w-4xl mx-auto mb-6 tracking-tight drop-shadow-sm"
+          />
+          <Editable
+            isAdmin={isAdmin}
+            itemKey="heroDescription"
+            initialValue={siteSettings.heroDescription}
+            onSave={handleSettingsSave}
+            as="p"
+            className="font-sans text-sm md:text-base text-[#5A4F49] max-w-lg mx-auto leading-relaxed mb-10 text-center"
+          />
           <Link href="/products" className="bg-[#D48C70] hover:bg-[#C27D62] text-white font-sans font-bold py-4 px-10 rounded-full shadow-lg shadow-[#D48C70]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
             Pilih Boneka Favoritnya
           </Link>
         </section>
 
         {/* TRUST SHOWCASE */}
-        <TrustShowcase />
+        <TrustShowcase
+          isAdmin={isAdmin}
+          items={siteSettings.trustItems as TrustItem[]}
+          onSave={(updatedItems) => handleSettingsSave('trustItems', updatedItems)}
+        />
 
         {/* =============================================
             CLOUD DIVIDER — Trust Badge → White Zone
@@ -841,27 +923,44 @@ export default function Home() {
                     <span>Cerita Simoengil</span>
                   </div>
 
-                  <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A1F1A] leading-tight gsap-section-title relative inline-block pb-3">
-                    Boneka Flanel yang Dibuat dengan Kasih Sayang
-                    <span className="gsap-underline absolute bottom-0 left-0 bg-[#D48C70] h-[3px] w-0"></span>
-                  </h2>
+                  <Editable
+                    isAdmin={isAdmin}
+                    itemKey="story.title"
+                    initialValue={story.title}
+                    onSave={(key, value) => handleSettingsSave('story', { ...story, title: value })}
+                    as="h2"
+                    className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A1F1A] leading-tight gsap-section-title relative pb-3"
+                  />
+                  <span className="gsap-underline absolute bottom-0 left-0 bg-[#D48C70] h-[3px] w-0" />
 
                   <div
                     className="space-y-5 text-slate-600 text-sm sm:text-base leading-relaxed font-medium gsap-reveal"
                     data-effect="blur"
                   >
-                    <p>
-                      Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat
-                      dengan tangan sendiri menggunakan kain flanel premium yang
-                      super lembut. Setiap boneka dijahit pelan-pelan agar rapi
-                      dan kuat.
-                    </p>
-                    <p>
-                      Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.
-                    </p>
-                    <p>
-                      Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.
-                    </p>
+                    <Editable
+                      isAdmin={isAdmin}
+                      itemKey="story.paragraph1"
+                      initialValue={story.paragraph1}
+                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph1: value })}
+                      as="p"
+                      className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
+                    />
+                    <Editable
+                      isAdmin={isAdmin}
+                      itemKey="story.paragraph2"
+                      initialValue={story.paragraph2}
+                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph2: value })}
+                      as="p"
+                      className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
+                    />
+                    <Editable
+                      isAdmin={isAdmin}
+                      itemKey="story.paragraph3"
+                      initialValue={story.paragraph3}
+                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph3: value })}
+                      as="p"
+                      className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
+                    />
                   </div>
 
                   {/* Highlight Quote */}
@@ -873,10 +972,14 @@ export default function Home() {
                     <span className="absolute top-1 left-2 text-4xl text-[#D48C70]/30 leading-none font-serif">
                       &ldquo;
                     </span>
-                    <p className="italic text-[#2A1F1A] font-serif text-sm sm:text-base leading-relaxed">
-                      &ldquo;Setiap boneka dibuat pelan-pelan supaya bisa menemani anak
-                      dengan nyaman dan penuh kehangatan.&rdquo;
-                    </p>
+                    <Editable
+                      isAdmin={isAdmin}
+                      itemKey="story.quote"
+                      initialValue={story.quote}
+                      onSave={(key, value) => handleSettingsSave('story', { ...story, quote: value })}
+                      as="p"
+                      className="italic text-[#2A1F1A] font-serif text-sm sm:text-base leading-relaxed"
+                    />
                   </div>
                 </div>
               </div>
