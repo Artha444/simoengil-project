@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Product, ProductVariant, PRODUCTS } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
-import { ProductDetailModal } from '@/components/ProductDetailModal';
+import { ProductDetailModal } from "@/components/ProductDetailModal";
 import { WishlistDrawer } from "@/components/WishlistDrawer";
 import { CartCelebration } from "@/components/CartCelebration";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -68,6 +68,7 @@ interface SiteSettings {
   heroBadge1Text: string;
   heroBadge2Icon: string;
   heroBadge2Text: string;
+  heroTagline: string;
   logoTextMain: string;
   logoTextSub: string;
   logoIcon: string;
@@ -96,7 +97,9 @@ export default function Home() {
   const dividerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [celebrateTrigger, setCelebrateTrigger] = useState(false);
-  const [celebrateProductImage, setCelebrateProductImage] = useState<string | undefined>();
+  const [celebrateProductImage, setCelebrateProductImage] = useState<
+    string | undefined
+  >();
 
   // Hero Background Parallax
   useEffect(() => {
@@ -145,7 +148,6 @@ export default function Home() {
     requestAnimationFrame(() => setCelebrateTrigger(true));
   };
 
-
   // Site Settings
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     heroTitle: "Temukan Boneka Kesukaanmu!",
@@ -175,6 +177,7 @@ export default function Home() {
     heroBadge1Text: "Terlembut",
     heroBadge2Icon: "❤️",
     heroBadge2Text: "Anti Alergi",
+    heroTagline: "Boneka Flanel Premium, Jahit Tangan, Lembut & Aman",
     logoTextMain: "Simoengil",
     logoTextSub: "Plushie & Doll",
     logoIcon: "Smile",
@@ -184,30 +187,38 @@ export default function Home() {
       {
         image: "/images/3-Hand.jpeg",
         title: "100% Jahitan Tangan",
-        description: "Setiap boneka kami dijahit dengan tangan, satu per satu, penuh ketelitian. Nggak ada mesin massal—cuma keterampilan dan kesabaran, supaya tiap jahitan kuat dan nggak gampang lepas.",
+        description:
+          "Setiap boneka kami dijahit dengan tangan, satu per satu, penuh ketelitian. Nggak ada mesin massal—cuma keterampilan dan kesabaran, supaya tiap jahitan kuat dan nggak gampang lepas.",
       },
       {
         image: "/images/4-Ruler.jpeg",
         title: "Detail Rapih & Kuat",
-        description: "Ukuran boneka flanel kami memang mungil, tapi detailnya nggak sembarangan. Setiap pola diukur presisi supaya proporsinya pas dan jahitannya tetap kuat meski sering dipeluk.",
+        description:
+          "Ukuran boneka flanel kami memang mungil, tapi detailnya nggak sembarangan. Setiap pola diukur presisi supaya proporsinya pas dan jahitannya tetap kuat meski sering dipeluk.",
       },
       {
         image: "/images/1-Cardboard.jpeg",
         title: "Packing Aman",
-        description: "Boneka diisi dakron premium yang empuk dan padat, lalu dikemas rapat dengan kardus tebal supaya aman sampai tujuan tanpa penyok, kotor, atau rusak di jalan.",
+        description:
+          "Boneka diisi dakron premium yang empuk dan padat, lalu dikemas rapat dengan kardus tebal supaya aman sampai tujuan tanpa penyok, kotor, atau rusak di jalan.",
       },
       {
         image: "/images/2-Truck.jpeg",
         title: "Pengiriman Cepat",
-        description: "Begitu pesanan selesai dijahit, langsung kami kirim secepat mungkin—supaya boneka baru kamu nggak lama-lama menunggu di perjalanan.",
+        description:
+          "Begitu pesanan selesai dijahit, langsung kami kirim secepat mungkin—supaya boneka baru kamu nggak lama-lama menunggu di perjalanan.",
       },
     ],
     story: {
       title: "Boneka Flanel yang Dibuat dengan Kasih Sayang",
-      paragraph1: "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
-      paragraph2: "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
-      paragraph3: "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
-      quote: "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
+      paragraph1:
+        "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
+      paragraph2:
+        "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
+      paragraph3:
+        "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
+      quote:
+        "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
     },
   });
 
@@ -536,10 +547,14 @@ export default function Home() {
   // merge doesn't include the story field.
   const story: StoryContent = (siteSettings.story as StoryContent) ?? {
     title: "Boneka Flanel yang Dibuat dengan Kasih Sayang",
-    paragraph1: "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
-    paragraph2: "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
-    paragraph3: "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
-    quote: "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
+    paragraph1:
+      "Halo, saya ibu dari Simoengil. Boneka-boneka ini saya buat dengan tangan sendiri menggunakan kain flanel premium yang super lembut. Setiap boneka dijahit pelan-pelan agar rapi dan kuat.",
+    paragraph2:
+      "Saya paham betul seorang ibu ingin yang terbaik. Makanya saya hanya pakai bahan flanel berkualitas tinggi. Boneka ini tersedia dalam ukuran 10cm dan 15cm (imut & mungil, tidak untuk dipeluk), hingga ukuran 20cm yang nyaman dipeluk.",
+    paragraph3:
+      "Sangat cocok untuk kado ulang tahun, gantungan kunci, kado wisuda, atau sekadar teman bermain anak. Banyak pelanggan yang sudah membeli dan senang dengan hasilnya.",
+    quote:
+      "Setiap boneka dibuat pelan-pelan supaya bisa menemani anak dengan nyaman dan penuh kehangatan.",
   };
 
   return (
@@ -552,16 +567,26 @@ export default function Home() {
         {/* HERO SECTION */}
         <section className="relative z-0 w-full min-h-[100svh] pt-28 pb-16 flex flex-col justify-center">
           {/* Zoomed Out Background with Parallax Ref */}
-          <div 
+          <div
             ref={bgRef}
-            className="absolute inset-0 w-full h-[130%] top-0 bg-cover bg-[30%_35%] md:bg-center bg-no-repeat z-0 pointer-events-none" 
-            style={{ backgroundImage: "url('/images/hero.png')" }} 
+            className="absolute inset-0 w-full h-[130%] top-0 bg-cover bg-[30%_35%] md:bg-center bg-no-repeat z-0 pointer-events-none"
+            style={{ backgroundImage: "url('/images/hero.png')" }}
           />
           {/* Sunlight Beams from Window */}
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-            <svg viewBox="0 0 1920 1080" className="w-full h-full opacity-[0.35]" preserveAspectRatio="none">
+            <svg
+              viewBox="0 0 1920 1080"
+              className="w-full h-full opacity-[0.35]"
+              preserveAspectRatio="none"
+            >
               <defs>
-                <linearGradient id="sun-beam-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient
+                  id="sun-beam-grad-1"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
                   <stop offset="0%" stopColor="#FFF8D6" stopOpacity="0.85" />
                   <stop offset="45%" stopColor="#FFEAA7" stopOpacity="0.35" />
                   <stop offset="100%" stopColor="#FFEAA7" stopOpacity="0" />
@@ -571,16 +596,16 @@ export default function Home() {
                 </filter>
               </defs>
               {/* Main wide diagonal light beam directed towards the doll/nightstand area (left-center) */}
-              <polygon 
-                points="0,80 320,0 1100,1080 0,1080" 
-                fill="url(#sun-beam-grad-1)" 
-                filter="url(#blur-beam-std)" 
+              <polygon
+                points="0,80 320,0 1100,1080 0,1080"
+                fill="url(#sun-beam-grad-1)"
+                filter="url(#blur-beam-std)"
               />
               {/* Secondary sharper beam for realistic overlap */}
-              <polygon 
-                points="80,0 260,0 950,1080 300,1080" 
-                fill="url(#sun-beam-grad-1)" 
-                filter="url(#blur-beam-std)" 
+              <polygon
+                points="80,0 260,0 950,1080 300,1080"
+                fill="url(#sun-beam-grad-1)"
+                filter="url(#blur-beam-std)"
                 opacity="0.65"
               />
             </svg>
@@ -589,147 +614,363 @@ export default function Home() {
           {/* Floating Dust Particles in the Sunbeam */}
           <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden select-none">
             <div className="absolute left-[8%] top-[45%] w-1.5 h-1.5 bg-white/70 rounded-full blur-[0.4px] animate-dust-1" />
-            <div className="absolute left-[14%] top-[55%] w-1 h-1 bg-white/80 rounded-full animate-dust-2" style={{ animationDelay: '1.5s' }} />
-            <div className="absolute left-[6%] top-[65%] w-2 h-2 bg-yellow-100/60 rounded-full blur-[0.7px] animate-dust-3" style={{ animationDelay: '3.0s' }} />
-            <div className="absolute left-[18%] top-[50%] w-1 h-1 bg-white/85 rounded-full animate-dust-1" style={{ animationDelay: '4.5s' }} />
-            <div className="absolute left-[24%] top-[58%] w-1.5 h-1.5 bg-yellow-50/50 rounded-full blur-[0.4px] animate-dust-2" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute left-[10%] top-[35%] w-1 h-1 bg-white/90 rounded-full animate-dust-3" style={{ animationDelay: '2.0s' }} />
-            <div className="absolute left-[16%] top-[40%] w-1.5 h-1.5 bg-white/60 rounded-full blur-[0.3px] animate-dust-1" style={{ animationDelay: '5.2s' }} />
-            <div className="absolute left-[20%] top-[30%] w-2 h-2 bg-yellow-100/50 rounded-full blur-[0.8px] animate-dust-2" style={{ animationDelay: '3.7s' }} />
-            <div className="absolute left-[28%] top-[48%] w-1 h-1 bg-white/75 rounded-full animate-dust-3" style={{ animationDelay: '6.0s' }} />
-            <div className="absolute left-[26%] top-[56%] w-1.5 h-1.5 bg-yellow-50/50 rounded-full blur-[0.4px] animate-dust-1" style={{ animationDelay: '2.5s' }} />
-            <div className="absolute left-[33%] top-[52%] w-1 h-1 bg-white/80 rounded-full animate-dust-2" style={{ animationDelay: '7.1s' }} />
-            <div className="absolute left-[4%] top-[72%] w-1.5 h-1.5 bg-white/50 rounded-full blur-[0.4px] animate-dust-3" style={{ animationDelay: '1.2s' }} />
+            <div
+              className="absolute left-[14%] top-[55%] w-1 h-1 bg-white/80 rounded-full animate-dust-2"
+              style={{ animationDelay: "1.5s" }}
+            />
+            <div
+              className="absolute left-[6%] top-[65%] w-2 h-2 bg-yellow-100/60 rounded-full blur-[0.7px] animate-dust-3"
+              style={{ animationDelay: "3.0s" }}
+            />
+            <div
+              className="absolute left-[18%] top-[50%] w-1 h-1 bg-white/85 rounded-full animate-dust-1"
+              style={{ animationDelay: "4.5s" }}
+            />
+            <div
+              className="absolute left-[24%] top-[58%] w-1.5 h-1.5 bg-yellow-50/50 rounded-full blur-[0.4px] animate-dust-2"
+              style={{ animationDelay: "0.5s" }}
+            />
+            <div
+              className="absolute left-[10%] top-[35%] w-1 h-1 bg-white/90 rounded-full animate-dust-3"
+              style={{ animationDelay: "2.0s" }}
+            />
+            <div
+              className="absolute left-[16%] top-[40%] w-1.5 h-1.5 bg-white/60 rounded-full blur-[0.3px] animate-dust-1"
+              style={{ animationDelay: "5.2s" }}
+            />
+            <div
+              className="absolute left-[20%] top-[30%] w-2 h-2 bg-yellow-100/50 rounded-full blur-[0.8px] animate-dust-2"
+              style={{ animationDelay: "3.7s" }}
+            />
+            <div
+              className="absolute left-[28%] top-[48%] w-1 h-1 bg-white/75 rounded-full animate-dust-3"
+              style={{ animationDelay: "6.0s" }}
+            />
+            <div
+              className="absolute left-[26%] top-[56%] w-1.5 h-1.5 bg-yellow-50/50 rounded-full blur-[0.4px] animate-dust-1"
+              style={{ animationDelay: "2.5s" }}
+            />
+            <div
+              className="absolute left-[33%] top-[52%] w-1 h-1 bg-white/80 rounded-full animate-dust-2"
+              style={{ animationDelay: "7.1s" }}
+            />
+            <div
+              className="absolute left-[4%] top-[72%] w-1.5 h-1.5 bg-white/50 rounded-full blur-[0.4px] animate-dust-3"
+              style={{ animationDelay: "1.2s" }}
+            />
           </div>
 
           {/* Animated Butterflies */}
           {/* Butterfly 1 (Near Window/Left) */}
-          <div className="absolute left-[20%] top-[40%] w-12 h-12 z-10 animate-fly-1 pointer-events-none" style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}>
+          <div
+            className="absolute left-[20%] top-[40%] w-12 h-12 z-10 animate-fly-1 pointer-events-none"
+            style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+          >
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
               {/* Left Wing */}
-              <g className="animate-wing-left" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52" fill="#FF8FB1" />
-                <path d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65" fill="#FFE4EC" />
+              <g
+                className="animate-wing-left"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52"
+                  fill="#FF8FB1"
+                />
+                <path
+                  d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65"
+                  fill="#FFE4EC"
+                />
               </g>
               {/* Right Wing */}
-              <g className="animate-wing-right" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52" fill="#FF8FB1" />
-                <path d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65" fill="#FFE4EC" />
+              <g
+                className="animate-wing-right"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52"
+                  fill="#FF8FB1"
+                />
+                <path
+                  d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65"
+                  fill="#FFE4EC"
+                />
               </g>
               {/* Body */}
               <ellipse cx="50" cy="53" rx="3" ry="18" fill="#4A3B32" />
               <circle cx="50" cy="33" r="4" fill="#4A3B32" />
-              <path d="M49,30 Q43,18 36,22 M51,30 Q57,18 64,22" stroke="#4A3B32" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+              <path
+                d="M49,30 Q43,18 36,22 M51,30 Q57,18 64,22"
+                stroke="#4A3B32"
+                strokeWidth="1.5"
+                fill="none"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
 
           {/* Butterfly 2 (Near Bed/Right) */}
-          <div className="absolute right-[25%] top-[25%] w-10 h-10 z-10 animate-fly-2 pointer-events-none" style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}>
+          <div
+            className="absolute right-[25%] top-[25%] w-10 h-10 z-10 animate-fly-2 pointer-events-none"
+            style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+          >
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
               {/* Left Wing */}
-              <g className="animate-wing-left" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52" fill="#F8BBD0" />
-                <path d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65" fill="#FFE4EC" />
+              <g
+                className="animate-wing-left"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52"
+                  fill="#F8BBD0"
+                />
+                <path
+                  d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65"
+                  fill="#FFE4EC"
+                />
               </g>
               {/* Right Wing */}
-              <g className="animate-wing-right" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52" fill="#F8BBD0" />
-                <path d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65" fill="#FFE4EC" />
+              <g
+                className="animate-wing-right"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52"
+                  fill="#F8BBD0"
+                />
+                <path
+                  d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65"
+                  fill="#FFE4EC"
+                />
               </g>
               {/* Body */}
               <ellipse cx="50" cy="53" rx="2.5" ry="16" fill="#4A3B32" />
               <circle cx="50" cy="35" r="3.5" fill="#4A3B32" />
-              <path d="M49,32 Q43,20 36,24 M51,32 Q57,20 64,24" stroke="#4A3B32" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <path
+                d="M49,32 Q43,20 36,24 M51,32 Q57,20 64,24"
+                stroke="#4A3B32"
+                strokeWidth="1.2"
+                fill="none"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
 
           {/* Butterfly 3 (Soft Cyan - Middle Upper) */}
-          <div className="absolute left-[45%] top-[15%] w-9 h-9 z-10 animate-fly-3 pointer-events-none" style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}>
+          <div
+            className="absolute left-[45%] top-[15%] w-9 h-9 z-10 animate-fly-3 pointer-events-none"
+            style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+          >
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
               {/* Left Wing */}
-              <g className="animate-wing-left" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52" fill="#80DEEA" />
-                <path d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65" fill="#E0F7FA" />
+              <g
+                className="animate-wing-left"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52"
+                  fill="#80DEEA"
+                />
+                <path
+                  d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65"
+                  fill="#E0F7FA"
+                />
               </g>
               {/* Right Wing */}
-              <g className="animate-wing-right" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52" fill="#80DEEA" />
-                <path d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65" fill="#E0F7FA" />
+              <g
+                className="animate-wing-right"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52"
+                  fill="#80DEEA"
+                />
+                <path
+                  d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65"
+                  fill="#E0F7FA"
+                />
               </g>
               {/* Body */}
               <ellipse cx="50" cy="53" rx="2.2" ry="15" fill="#4A3B32" />
               <circle cx="50" cy="36" r="3.2" fill="#4A3B32" />
-              <path d="M49,33 Q43,21 36,25 M51,33 Q57,21 64,25" stroke="#4A3B32" strokeWidth="1.0" fill="none" strokeLinecap="round" />
+              <path
+                d="M49,33 Q43,21 36,25 M51,33 Q57,21 64,25"
+                stroke="#4A3B32"
+                strokeWidth="1.0"
+                fill="none"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
 
           {/* Butterfly 4 (Soft Gold - Center Right) */}
-          <div className="absolute right-[45%] top-[40%] w-11 h-11 z-10 animate-fly-4 pointer-events-none" style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}>
+          <div
+            className="absolute right-[45%] top-[40%] w-11 h-11 z-10 animate-fly-4 pointer-events-none"
+            style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+          >
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
               {/* Left Wing */}
-              <g className="animate-wing-left" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52" fill="#FFE082" />
-                <path d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65" fill="#FFF9C4" />
+              <g
+                className="animate-wing-left"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52"
+                  fill="#FFE082"
+                />
+                <path
+                  d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65"
+                  fill="#FFF9C4"
+                />
               </g>
               {/* Right Wing */}
-              <g className="animate-wing-right" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52" fill="#FFE082" />
-                <path d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65" fill="#FFF9C4" />
+              <g
+                className="animate-wing-right"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52"
+                  fill="#FFE082"
+                />
+                <path
+                  d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65"
+                  fill="#FFF9C4"
+                />
               </g>
               {/* Body */}
               <ellipse cx="50" cy="53" rx="2.8" ry="17" fill="#4A3B32" />
               <circle cx="50" cy="34" r="3.8" fill="#4A3B32" />
-              <path d="M49,31 Q43,19 36,23 M51,31 Q57,19 64,23" stroke="#4A3B32" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+              <path
+                d="M49,31 Q43,19 36,23 M51,31 Q57,19 64,23"
+                stroke="#4A3B32"
+                strokeWidth="1.3"
+                fill="none"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
 
           {/* Butterfly 5 (Soft Lavender - Left Upper) */}
-          <div className="absolute left-[30%] top-[20%] w-8 h-8 z-10 animate-fly-5 pointer-events-none" style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}>
+          <div
+            className="absolute left-[30%] top-[20%] w-8 h-8 z-10 animate-fly-5 pointer-events-none"
+            style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+          >
             <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
               {/* Left Wing */}
-              <g className="animate-wing-left" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52" fill="#CE93D8" />
-                <path d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65" fill="#F3E5F5" />
+              <g
+                className="animate-wing-left"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C20,15 5,30 15,55 C22,70 45,60 50,52"
+                  fill="#CE93D8"
+                />
+                <path
+                  d="M50,52 C35,62 30,78 42,82 C48,82 48,70 50,65"
+                  fill="#F3E5F5"
+                />
               </g>
               {/* Right Wing */}
-              <g className="animate-wing-right" style={{ transformOrigin: '50px 50px', transformStyle: 'preserve-3d' }}>
-                <path d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52" fill="#CE93D8" />
-                <path d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65" fill="#F3E5F5" />
+              <g
+                className="animate-wing-right"
+                style={{
+                  transformOrigin: "50px 50px",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <path
+                  d="M50,48 C80,15 95,30 85,55 C78,70 55,60 50,52"
+                  fill="#CE93D8"
+                />
+                <path
+                  d="M50,52 C65,62 70,78 58,82 C52,82 52,70 50,65"
+                  fill="#F3E5F5"
+                />
               </g>
               {/* Body */}
               <ellipse cx="50" cy="53" rx="2.0" ry="14" fill="#4A3B32" />
               <circle cx="50" cy="37" r="3.0" fill="#4A3B32" />
-              <path d="M49,34 Q43,22 36,26 M51,34 Q57,22 64,26" stroke="#4A3B32" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+              <path
+                d="M49,34 Q43,22 36,26 M51,34 Q57,22 64,26"
+                stroke="#4A3B32"
+                strokeWidth="0.9"
+                fill="none"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-center md:justify-end w-full z-20">
-            
-            {/* Hero Info Text Block (No Card Container to match image) */}
-            <div ref={textRef} className="w-full md:w-[55%] lg:w-[50%] text-center md:text-left space-y-8 relative z-10 flex flex-col items-center md:items-start">
-              
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-end w-full z-20 mt-auto md:mt-0 pt-16 md:pt-0 pb-8 md:pb-0">
+            {/* Hero Info Text Block — Safe Zone Card */}
+            <div
+              ref={textRef}
+              className="w-full md:w-[55%] lg:w-[50%] text-center md:text-left space-y-4 md:space-y-6 relative z-10 flex flex-col items-center md:items-start bg-white/85 backdrop-blur-sm rounded-2xl p-5 md:p-8 shadow-lg shadow-black/5 border border-white/60"
+            >
+              {/* Pre-headline Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D48C70]/10 border border-[#D48C70]/20 text-[#D48C70] text-[10px] font-black uppercase tracking-[0.15em]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D48C70] animate-pulse" />
+                <span>Boneka Premium</span>
+              </div>
               <Editable
                 isAdmin={isAdmin}
                 itemKey="heroTitle"
                 initialValue={siteSettings.heroTitle}
                 onSave={handleSettingsSave}
                 as="h1"
-                className="font-serif uppercase text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal text-[#1A1A1A] tracking-tight leading-[1.05] gsap-hero-title drop-shadow-[0_2px_10px_rgba(255,255,255,0.85)]"
+                className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#1A1A1A] tracking-tight leading-[1.1] gsap-hero-title"
               >
                 {(value) => (
                   <span dangerouslySetInnerHTML={{ __html: value }} />
                 )}
               </Editable>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-6 pt-4 w-full gsap-hero-ctas">
+              {/* Editable Tagline — hidden on mobile */}
+              <Editable
+                isAdmin={isAdmin}
+                itemKey="heroTagline"
+                initialValue={siteSettings.heroTagline}
+                onSave={handleSettingsSave}
+                as="p"
+                className="hidden md:block text-sm md:text-base text-[#5A4F49] font-medium leading-relaxed max-w-md"
+              />
+
+              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 md:gap-4 pt-2 w-full gsap-hero-ctas">
                 <div className="relative group inline-block w-full sm:w-auto">
                   {/* Floating Taekwondo Doll Hiding Behind */}
                   <div className="absolute -left-2 -top-6 w-16 h-16 sm:w-20 sm:h-20 z-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-10 group-hover:-translate-x-6 group-hover:-rotate-12 origin-bottom">
                     <div className="relative w-full h-full animate-peek group-hover:animate-none">
-                      <img 
-                        src="/images/boneka3.png" 
-                        alt="Boneka Taekwondo" 
-                        onError={(e) => { e.currentTarget.src = '/images/boneka3.png' }}
+                      <img
+                        src="/images/boneka3.png"
+                        alt="Boneka Taekwondo"
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/boneka3.png";
+                        }}
                         className="w-full h-full object-contain drop-shadow-md brightness-95 sepia-[0.2]"
                       />
                       {/* Exclamation Mark */}
@@ -738,13 +979,15 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <Link
                     href="/products"
                     className="relative z-10 w-full sm:w-auto px-7 py-4.5 bg-[#D48C70] hover:bg-[#C27D62] text-white font-extrabold rounded-xl text-center shadow-lg shadow-[#D48C70]/30 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 cursor-pointer btn-premium-hover"
                   >
                     <span>Pilih Boneka Favoritnya</span>
-                    <span className="bg-white text-[#D48C70] w-6 h-6 rounded-md flex items-center justify-center font-black text-sm shrink-0">&gt;</span>
+                    <span className="bg-white text-[#D48C70] w-6 h-6 rounded-md flex items-center justify-center font-black text-sm shrink-0">
+                      &gt;
+                    </span>
                   </Link>
                 </div>
 
@@ -763,20 +1006,27 @@ export default function Home() {
         <section className="relative z-10 w-full pt-24 md:pt-32 pb-24 px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
           <div className="absolute top-[54px] md:top-[74px] bottom-0 left-0 right-0 bg-[#FCE6CB] -z-10" />
           {/* Creative Stitch & Felt Wave Divider (Made taller to allow downward parallax without revealing straight lines) */}
-          <div ref={dividerRef} className="absolute top-0 left-0 right-0 w-full z-20 pointer-events-none">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-[55px] md:h-[75px] block">
+          <div
+            ref={dividerRef}
+            className="absolute top-0 left-0 right-0 w-full z-20 pointer-events-none"
+          >
+            <svg
+              viewBox="0 0 1200 120"
+              preserveAspectRatio="none"
+              className="w-full h-[55px] md:h-[75px] block"
+            >
               {/* Wavy Felt Fabric Layer */}
-              <path 
-                d="M0,40 C50,20 100,20 150,40 C200,60 250,60 300,40 C350,20 400,20 450,40 C500,60 550,60 600,40 C650,20 700,20 750,40 C800,60 850,60 900,40 C950,20 1000,20 1050,40 C1100,60 1150,60 1200,40 L1200,120 L0,120 Z" 
-                fill="#FCE6CB" 
+              <path
+                d="M0,40 C50,20 100,20 150,40 C200,60 250,60 300,40 C350,20 400,20 450,40 C500,60 550,60 600,40 C650,20 700,20 750,40 C800,60 850,60 900,40 C950,20 1000,20 1050,40 C1100,60 1150,60 1200,40 L1200,120 L0,120 Z"
+                fill="#FCE6CB"
               />
               {/* White Sewing Stitch Line (Embroidery Thread) */}
-              <path 
-                d="M0,33 C50,13 100,13 150,33 C200,53 250,53 300,33 C350,13 400,13 450,33 C500,53 550,53 600,33 C650,13 700,13 750,33 C800,53 850,53 900,33 C950,13 1000,13 1050,33 C1100,53 1150,53 1200,33" 
-                fill="none" 
-                stroke="#FFFFFF" 
-                strokeWidth="4" 
-                strokeDasharray="14 10" 
+              <path
+                d="M0,33 C50,13 100,13 150,33 C200,53 250,53 300,33 C350,13 400,13 450,33 C500,53 550,53 600,33 C650,13 700,13 750,33 C800,53 850,53 900,33 C950,13 1000,13 1050,33 C1100,53 1150,53 1200,33"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="4"
+                strokeDasharray="14 10"
                 strokeLinecap="round"
                 opacity="0.9"
               />
@@ -798,7 +1048,10 @@ export default function Home() {
             as="p"
             className="font-sans text-sm md:text-base text-[#5A4F49] max-w-lg mx-auto leading-relaxed mb-10 text-center"
           />
-          <Link href="/products" className="bg-[#D48C70] hover:bg-[#C27D62] text-white font-sans font-bold py-4 px-10 rounded-full shadow-lg shadow-[#D48C70]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
+          <Link
+            href="/products"
+            className="bg-[#D48C70] hover:bg-[#C27D62] text-white font-sans font-bold py-4 px-10 rounded-full shadow-lg shadow-[#D48C70]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg"
+          >
             Pilih Boneka Favoritnya
           </Link>
         </section>
@@ -807,13 +1060,18 @@ export default function Home() {
         <TrustShowcase
           isAdmin={isAdmin}
           items={siteSettings.trustItems as TrustItem[]}
-          onSave={(updatedItems) => handleSettingsSave('trustItems', updatedItems)}
+          onSave={(updatedItems) =>
+            handleSettingsSave("trustItems", updatedItems)
+          }
         />
 
         {/* =============================================
             CLOUD DIVIDER — Trust Badge → White Zone
         =============================================== */}
-        <div className="relative z-10 w-full -mb-1 pointer-events-none select-none" aria-hidden="true">
+        <div
+          className="relative z-10 w-full -mb-1 pointer-events-none select-none"
+          aria-hidden="true"
+        >
           <svg
             viewBox="0 0 1440 140"
             preserveAspectRatio="none"
@@ -885,12 +1143,8 @@ export default function Home() {
             dengan peach trust badge di atasnya
         =============================================== */}
         <div className="relative z-10 bg-white">
-
           {/* SECTION A: TENTANG SIMOENGIL (STORYTELLING) */}
-          <section
-            id="tentang"
-            className="relative py-24"
-          >
+          <section id="tentang" className="relative py-24">
             <div className="w-full px-4 sm:px-6 lg:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                 {/* Story Image Section with Polaroid Vibe */}
@@ -910,8 +1164,8 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="mt-5 text-center font-serif text-[#2C2C2C] text-sm tracking-wide flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-[#D48C70]" /> Kain Lembut
-                      & Dacron Murni
+                      <Sparkles className="w-4 h-4 text-[#D48C70]" /> Kain
+                      Lembut & Dacron Murni
                     </div>
                   </div>
                 </div>
@@ -927,7 +1181,9 @@ export default function Home() {
                     isAdmin={isAdmin}
                     itemKey="story.title"
                     initialValue={story.title}
-                    onSave={(key, value) => handleSettingsSave('story', { ...story, title: value })}
+                    onSave={(key, value) =>
+                      handleSettingsSave("story", { ...story, title: value })
+                    }
                     as="h2"
                     className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A1F1A] leading-tight gsap-section-title relative pb-3"
                   />
@@ -941,7 +1197,12 @@ export default function Home() {
                       isAdmin={isAdmin}
                       itemKey="story.paragraph1"
                       initialValue={story.paragraph1}
-                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph1: value })}
+                      onSave={(key, value) =>
+                        handleSettingsSave("story", {
+                          ...story,
+                          paragraph1: value,
+                        })
+                      }
                       as="p"
                       className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
                     />
@@ -949,7 +1210,12 @@ export default function Home() {
                       isAdmin={isAdmin}
                       itemKey="story.paragraph2"
                       initialValue={story.paragraph2}
-                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph2: value })}
+                      onSave={(key, value) =>
+                        handleSettingsSave("story", {
+                          ...story,
+                          paragraph2: value,
+                        })
+                      }
                       as="p"
                       className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
                     />
@@ -957,7 +1223,12 @@ export default function Home() {
                       isAdmin={isAdmin}
                       itemKey="story.paragraph3"
                       initialValue={story.paragraph3}
-                      onSave={(key, value) => handleSettingsSave('story', { ...story, paragraph3: value })}
+                      onSave={(key, value) =>
+                        handleSettingsSave("story", {
+                          ...story,
+                          paragraph3: value,
+                        })
+                      }
                       as="p"
                       className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium"
                     />
@@ -976,7 +1247,9 @@ export default function Home() {
                       isAdmin={isAdmin}
                       itemKey="story.quote"
                       initialValue={story.quote}
-                      onSave={(key, value) => handleSettingsSave('story', { ...story, quote: value })}
+                      onSave={(key, value) =>
+                        handleSettingsSave("story", { ...story, quote: value })
+                      }
                       as="p"
                       className="italic text-[#2A1F1A] font-serif text-sm sm:text-base leading-relaxed"
                     />
@@ -1048,13 +1321,17 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="flex gap-0.5">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4.5 h-4.5 fill-current text-[#E8B37D]" />
+                        <Star
+                          key={i}
+                          className="w-4.5 h-4.5 fill-current text-[#E8B37D]"
+                        />
                       ))}
                     </div>
                     <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium italic">
-                      &quot;Bulunya halus banget rasfur premium, jahitannya sangat
-                      rapi dan tebal. Isian dacronnya padat tapi tetap empuk
-                      banget dipeluk. Sangat rekomended buat kado anak-anak!&quot;
+                      &quot;Bulunya halus banget rasfur premium, jahitannya
+                      sangat rapi dan tebal. Isian dacronnya padat tapi tetap
+                      empuk banget dipeluk. Sangat rekomended buat kado
+                      anak-anak!&quot;
                     </p>
                   </div>
                   <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
@@ -1064,9 +1341,13 @@ export default function Home() {
                     <div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#2C2C2C] flex flex-wrap items-center gap-1.5">
                         <span>Ratih Ningsih</span>
-                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">✓ Verified</span>
+                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">
+                          ✓ Verified
+                        </span>
                       </h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">12 Mei 2026</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        12 Mei 2026
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1080,7 +1361,10 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="flex gap-0.5">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4.5 h-4.5 fill-current text-[#E8B37D]" />
+                        <Star
+                          key={i}
+                          className="w-4.5 h-4.5 fill-current text-[#E8B37D]"
+                        />
                       ))}
                     </div>
                     <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium italic">
@@ -1097,9 +1381,13 @@ export default function Home() {
                     <div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#2C2C2C] flex flex-wrap items-center gap-1.5">
                         <span>Budi Santoso</span>
-                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">✓ Verified</span>
+                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">
+                          ✓ Verified
+                        </span>
                       </h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">04 Mei 2026</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        04 Mei 2026
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1113,13 +1401,17 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="flex gap-0.5">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4.5 h-4.5 fill-current text-[#E8B37D]" />
+                        <Star
+                          key={i}
+                          className="w-4.5 h-4.5 fill-current text-[#E8B37D]"
+                        />
                       ))}
                     </div>
                     <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium italic">
-                      &quot;Anak saya senang sekali dengan boneka ukuran 20cm ini, pas buat dipeluk saat tidur. Bulunya tidak mudah rontok jadi aman
-                      untuk balita. Kemarin dicuci mesin tetap mengembang
-                      bagus!&quot;
+                      &quot;Anak saya senang sekali dengan boneka ukuran 20cm
+                      ini, pas buat dipeluk saat tidur. Bulunya tidak mudah
+                      rontok jadi aman untuk balita. Kemarin dicuci mesin tetap
+                      mengembang bagus!&quot;
                     </p>
                   </div>
                   <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
@@ -1129,9 +1421,13 @@ export default function Home() {
                     <div>
                       <h4 className="font-bold text-xs sm:text-sm text-[#2C2C2C] flex flex-wrap items-center gap-1.5">
                         <span>Siti Rahma</span>
-                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">✓ Verified</span>
+                        <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded font-black border border-emerald-100 uppercase tracking-widest scale-95">
+                          ✓ Verified
+                        </span>
                       </h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">28 April 2026</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        28 April 2026
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1156,7 +1452,8 @@ export default function Home() {
                 className="text-slate-500 text-xs sm:text-sm font-medium gsap-reveal"
                 data-effect="blur"
               >
-                Informasi lengkap seputar kualitas boneka, dan pengemasan pesanan.
+                Informasi lengkap seputar kualitas boneka, dan pengemasan
+                pesanan.
               </p>
             </div>
 
@@ -1197,8 +1494,8 @@ export default function Home() {
               })}
             </div>
           </section>
-
-        </div>{/* END WHITE ZONE */}
+        </div>
+        {/* END WHITE ZONE */}
 
         {/* FOOTER */}
         <SiteFooter />
