@@ -28,6 +28,40 @@ export default function Header() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeHash, setActiveHash] = useState("");
+
+  useEffect(() => {
+    setActiveHash(window.location.hash);
+    const onHashChange = () => setActiveHash(window.location.hash);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [pathname]);
+
+  // Detect scroll to toggle header transparency and ScrollSpy for active section
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+
+      // ScrollSpy logic
+      if (pathname === "/") {
+        const faqSection = document.getElementById("faq");
+        if (faqSection) {
+          const rect = faqSection.getBoundingClientRect();
+          // Jika bagian atas FAQ sudah mencapai pertengahan layar (atau lebih tinggi)
+          // dan bagian bawahnya masih terlihat, maka FAQ dianggap aktif
+          if (rect.top <= window.innerHeight * 0.55 && rect.bottom >= window.innerHeight * 0.2) {
+            setActiveHash((prev) => (prev !== "#faq" ? "#faq" : prev));
+          } else {
+            setActiveHash((prev) => (prev === "#faq" ? "" : prev));
+          }
+        }
+      }
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [pathname]);
 
   // Load auth & cart state
   useEffect(() => {
@@ -131,6 +165,17 @@ export default function Header() {
       e.preventDefault();
       document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" });
       window.history.replaceState(null, "", "#faq");
+      setActiveHash("#faq");
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.history.replaceState(null, "", "/");
+      setActiveHash("");
     }
     setIsMobileMenuOpen(false);
   };
@@ -151,11 +196,17 @@ export default function Header() {
     <>
       <motion.header
         onClick={() => window.dispatchEvent(new Event('navbar_interaction'))}
-        className="fixed top-0 left-0 right-0 w-full z-40 pt-2 pb-0 sm:py-4 px-4 will-change-transform"
+        className={`fixed top-0 left-0 right-0 w-full z-40 transition-all duration-700 ease-in-out will-change-transform ${
+          isScrolled ? "pt-2 pb-0 sm:py-4 px-4" : "pt-4 px-6 lg:px-12"
+        }`}
       >
-        <div className="max-w-6xl mx-auto">
+        <div className={`mx-auto transition-all duration-700 ease-in-out ${isScrolled ? "max-w-6xl" : "max-w-full"}`}>
           {/* Main Navbar Container (Floating Pill Style) */}
-          <div className="bg-[#0A0F1D]/90 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl md:rounded-[2rem] overflow-hidden">
+          <div className={`transition-all duration-700 ease-in-out border rounded-2xl md:rounded-[2rem] overflow-hidden ${
+            isScrolled 
+              ? "bg-[#0A0F1D]/90 backdrop-blur-md border-white/10 shadow-xl" 
+              : "bg-transparent backdrop-blur-none border-transparent shadow-none"
+          }`}>
             {/* Admin Bar (if admin) */}
             {isAdmin && (
               <div className="w-full bg-slate-900 border-b border-pink-500/30 text-white flex items-center transition-all duration-300">
@@ -178,40 +229,64 @@ export default function Header() {
             )}
 
             {/* Navbar Content */}
-            <div className="px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+            <div className={`transition-all duration-700 ease-in-out flex items-center justify-between gap-4 relative ${
+              isScrolled 
+                ? "px-4 sm:px-6 lg:px-8 h-16 sm:h-20" 
+                : "px-0 h-20 sm:h-24"
+            }`}>
               {/* Logo & Brand */}
               <Link
                 href="/"
+                onClick={handleHomeClick}
                 className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0"
               >
-                <div className="w-12 h-12 sm:w-15 sm:h-15 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0">
+                <div className={`rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0 transition-all duration-700 ease-in-out ${
+                  isScrolled ? "w-12 h-12 sm:w-15 sm:h-15" : "w-16 h-16 sm:w-20 sm:h-20"
+                }`}>
                   <img
-                    src="/images/logo.png"
+                    src="/images/logoNEW.webp"
                     alt="Simoengil Logo"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-sm sm:text-lg font-bold text-white tracking-wide group-hover:text-[#FFB6C8] transition-colors font-heading block leading-none truncate">
+                  <span className={`font-normal tracking-wide group-hover:text-[#FFB6C8] transition-colors font-magilio block leading-none truncate transition-all duration-700 ease-in-out ${
+                    isScrolled ? "text-lg sm:text-xl text-white" : "text-xl sm:text-2xl text-[#4A3B32] drop-shadow-md"
+                  }`}>
                     Simoengil
                   </span>
                 </div>
               </Link>
 
               {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center gap-1 bg-white/5 rounded-full px-2 py-1.5 border border-white/5">
+              <nav className={`hidden md:flex items-center gap-1 rounded-full px-2 py-1.5 border transition-all duration-700 ease-in-out absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10 ${
+                isScrolled ? "bg-white/5 border-white/5" : "bg-white/70 backdrop-blur-md border-white/40 shadow-sm"
+              }`}>
                 {navLinks.map((link) => {
-                  const isActive =
-                    pathname === link.path || (link.path === "/#faq" && false); // Basic active logic
+                  let isActive = false;
+                  if (link.path.includes("#")) {
+                    const [basePath, hashPart] = link.path.split("#");
+                    isActive = pathname === basePath && activeHash === `#${hashPart}`;
+                  } else {
+                    if (link.path === "/") {
+                      isActive = pathname === "/" && activeHash === "";
+                    } else {
+                      isActive = pathname === link.path;
+                    }
+                  }
+                    
                   return (
                     <Link
                       key={link.name}
                       href={link.path}
-                      onClick={link.name === "FAQ" ? handleFaqClick : undefined}
+                      onClick={
+                        link.name === "FAQ" ? handleFaqClick :
+                        link.name === "Beranda" ? handleHomeClick : undefined
+                      }
                       className={`relative px-4 py-2 text-sm font-bold transition-colors rounded-full flex items-center gap-1.5 ${
                         isActive
-                          ? "text-white bg-white/10"
-                          : "text-white/70 hover:text-white hover:bg-white/5"
+                          ? isScrolled ? "text-white bg-white/10" : "text-[#4A3B32] bg-[#4A3B32]/10"
+                          : isScrolled ? "text-white/70 hover:text-white hover:bg-white/5" : "text-[#4A3B32]/75 hover:text-[#4A3B32] hover:bg-[#4A3B32]/5"
                       }`}
                     >
                       <link.icon className="w-4 h-4" />
@@ -247,7 +322,11 @@ export default function Header() {
                   data-cart-icon
                   aria-label="Buka keranjang"
                   onClick={() => setIsWishlistOpen(true)}
-                  className="relative p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all cursor-pointer"
+                  className={`relative p-2.5 rounded-xl border transition-all cursor-pointer ${
+                    isScrolled 
+                      ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                      : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
+                  }`}
                 >
                   <ShoppingCart className="w-4.5 h-4.5" />
                   {cart.length > 0 && (
@@ -261,14 +340,22 @@ export default function Header() {
                 {user ? (
                   <Link
                     href="/dashboard"
-                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all"
+                    className={`p-2.5 rounded-xl border transition-all ${
+                      isScrolled 
+                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                        : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
+                    }`}
                   >
                     <User className="w-4.5 h-4.5" />
                   </Link>
                 ) : (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all cursor-pointer"
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                      isScrolled 
+                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                        : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
+                    }`}
                   >
                     <User className="w-4.5 h-4.5" />
                   </button>
@@ -279,7 +366,11 @@ export default function Header() {
               <div className="flex md:hidden items-center gap-2">
                 <button
                   onClick={() => setIsWishlistOpen(true)}
-                  className="relative p-2 rounded-lg bg-white/10 border border-white/10 text-white cursor-pointer"
+                  className={`relative p-2 rounded-lg border cursor-pointer transition-all ${
+                    isScrolled 
+                      ? "bg-white/10 border-white/10 text-white" 
+                      : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm"
+                  }`}
                 >
                   <ShoppingCart className="w-5 h-5" />
                   {cart.length > 0 && (
@@ -290,7 +381,11 @@ export default function Header() {
                 </button>
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="p-2 rounded-lg bg-white/10 border border-white/10 text-white cursor-pointer"
+                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                    isScrolled 
+                      ? "bg-white/10 border-white/10 text-white" 
+                      : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm"
+                  }`}
                 >
                   {isMobileMenuOpen ? (
                     <X className="w-5 h-5" />

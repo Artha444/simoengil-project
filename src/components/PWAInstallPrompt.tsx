@@ -64,7 +64,7 @@ export default function PWAInstallPrompt() {
       
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center shrink-0">
-          <img src="/images/logo.png" alt="Logo" className="w-8 h-8 object-cover rounded-md" />
+          <img src="/images/logoNEW.webp" alt="Logo" className="w-8 h-8 object-cover rounded-md" />
         </div>
         
         <div className="flex-1">

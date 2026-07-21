@@ -7,9 +7,10 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
   const pathname = usePathname();
   const isAdmin = pathname === '/dashboard' || pathname === '/admin-panel/dashboard';
   const isProduct = pathname.startsWith('/product/');
+  const isHome = pathname === '/';
 
   return (
-    <div className={`relative flex-1 flex flex-col ${isAdmin || isProduct ? '' : 'pt-24'}`}>
+    <div className={`relative flex-1 flex flex-col ${isAdmin || isProduct || isHome ? '' : 'pt-24'}`}>
       {children}
     </div>
   );

@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Magilio';
+  src: url('/fonts/MagilioRegular-8Mxvg.otf') format('opentype'),
+       url('/fonts/MagilioRegular-Yzv2O.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --font-sans: var(--font-inter), sans-serif;
   --font-heading: var(--font-poppins), sans-serif;
+  --font-magilio: 'Magilio', sans-serif;
   
   --color-brand-pink: #FFB6C8;
   --color-brand-pink-dark: #FF8FB1;
@@ -99,6 +109,73 @@
     50% { transform: translate(-30px, -15px) scale(1.1); opacity: 0.5; }
     75% { transform: translate(20px, -20px) scale(0.9); opacity: 0.7; }
   }
+  
+  @keyframes wing-flap-left {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(70deg); }
+  }
+  @keyframes wing-flap-right {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(-70deg); }
+  }
+  @keyframes fly-path-1 {
+    0% { transform: translate(0, 0) scale(1) rotate(5deg); }
+    33% { transform: translate(60px, -40px) scale(0.9) rotate(-10deg); }
+    66% { transform: translate(-40px, -80px) scale(1.1) rotate(15deg); }
+    100% { transform: translate(0, 0) scale(1) rotate(5deg); }
+  }
+  @keyframes fly-path-2 {
+    0% { transform: translate(0, 0) scale(0.85) rotate(-15deg); }
+    50% { transform: translate(-80px, 50px) scale(1.05) rotate(10deg); }
+    100% { transform: translate(0, 0) scale(0.85) rotate(-15deg); }
+  }
+  @keyframes fly-path-3 {
+    0% { transform: translate(0, 0) scale(0.9) rotate(10deg); }
+    50% { transform: translate(120px, -70px) scale(1.1) rotate(-15deg); }
+    100% { transform: translate(0, 0) scale(0.9) rotate(10deg); }
+  }
+  @keyframes fly-path-4 {
+    0% { transform: translate(0, 0) scale(1.05) rotate(-5deg); }
+    50% { transform: translate(-70px, -60px) scale(0.85) rotate(15deg); }
+    100% { transform: translate(0, 0) scale(1.05) rotate(-5deg); }
+  }
+  @keyframes fly-path-5 {
+    0% { transform: translate(0, 0) scale(0.95) rotate(0deg); }
+    33% { transform: translate(-50px, -40px) scale(1.05) rotate(-12deg); }
+    66% { transform: translate(50px, -80px) scale(0.9) rotate(8deg); }
+    100% { transform: translate(0, 0) scale(0.95) rotate(0deg); }
+  }
+  
+  --animate-wing-left: wing-flap-left 0.3s ease-in-out infinite;
+  --animate-wing-right: wing-flap-right 0.3s ease-in-out infinite;
+  --animate-fly-1: fly-path-1 12s ease-in-out infinite;
+  --animate-fly-2: fly-path-2 16s ease-in-out infinite;
+  --animate-fly-3: fly-path-3 15s ease-in-out infinite;
+  --animate-fly-4: fly-path-4 13s ease-in-out infinite;
+  --animate-fly-5: fly-path-5 17s ease-in-out infinite;
+
+  @keyframes dust-float-1 {
+    0% { transform: translate(0, 0); opacity: 0; }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.6; }
+    100% { transform: translate(40px, -60px); opacity: 0; }
+  }
+  @keyframes dust-float-2 {
+    0% { transform: translate(0, 0); opacity: 0; }
+    30% { opacity: 0.8; }
+    70% { opacity: 0.8; }
+    100% { transform: translate(-50px, -40px); opacity: 0; }
+  }
+  @keyframes dust-float-3 {
+    0% { transform: translate(0, 0); opacity: 0; }
+    15% { opacity: 0.5; }
+    85% { opacity: 0.5; }
+    100% { transform: translate(60px, -30px); opacity: 0; }
+  }
+
+  --animate-dust-1: dust-float-1 8s ease-in-out infinite;
+  --animate-dust-2: dust-float-2 10s ease-in-out infinite;
+  --animate-dust-3: dust-float-3 12s ease-in-out infinite;
 }
 
 @keyframes cardBounce {
@@ -124,20 +201,13 @@ body {
   color: var(--foreground);
 }
 
-/* Custom Scrollbar */
+/* Hide browser default scrollbar completely to use the floating React CustomScrollbar */
 ::-webkit-scrollbar {
-  width: 12px;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: #FFF8F3;
-}
-::-webkit-scrollbar-thumb {
-  background: #FFB6C8;
-  border-radius: 9999px;
-  border: 3px solid #FFF8F3;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #FF8FB1;
+html {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 /* Navigation Link Underline Animation */
@@ -175,6 +245,11 @@ html[style*="overflow: hidden"] div.sticky[class*="z-50"] {
   left: 0 !important;
   right: 0 !important;
   width: 100% !important;
+}
+
+.font-magilio {
+  font-family: 'Magilio', sans-serif !important;
+  font-feature-settings: "salt" 1, "swsh" 1;
 }
 
 

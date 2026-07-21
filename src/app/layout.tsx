@@ -6,6 +6,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Header from "@/components/Header";
 import { ChatWidget } from "@/components/ChatWidget";
 import MainLayoutWrapper from "@/components/MainLayoutWrapper";
+import CustomScrollbar from "@/components/CustomScrollbar";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -89,6 +90,7 @@ export default function RootLayout({
         </MainLayoutWrapper>
         <PWAInstallPrompt />
         <ChatWidget />
+        <CustomScrollbar />
       </body>
     </html>
   );
