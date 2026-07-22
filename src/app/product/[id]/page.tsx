@@ -887,21 +887,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                             {product.specifications.size}
                           </span>
                         </div>
-                        <div className="flex justify-between border-b border-slate-50 pb-1">
-                          <span className="text-slate-400">Isian Boneka</span>
-                          <span className="font-bold text-slate-800">
-                            100% Silikon Dakron Grade A Murni
-                          </span>
-                        </div>
-                        <div className="flex justify-between pb-1">
-                          <span className="text-slate-400">
-                            Standar Keamanan
-                          </span>
-                          <span className="font-bold text-emerald-600 flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Aman untuk
-                            Balita (Hypoallergenic)
-                          </span>
-                        </div>
+
                       </div>
                     </div>
                   </div>

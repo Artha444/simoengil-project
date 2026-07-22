@@ -50,7 +50,10 @@ export default function Header() {
           const rect = faqSection.getBoundingClientRect();
           // Jika bagian atas FAQ sudah mencapai pertengahan layar (atau lebih tinggi)
           // dan bagian bawahnya masih terlihat, maka FAQ dianggap aktif
-          if (rect.top <= window.innerHeight * 0.55 && rect.bottom >= window.innerHeight * 0.2) {
+          if (
+            rect.top <= window.innerHeight * 0.55 &&
+            rect.bottom >= window.innerHeight * 0.2
+          ) {
             setActiveHash((prev) => (prev !== "#faq" ? "#faq" : prev));
           } else {
             setActiveHash((prev) => (prev === "#faq" ? "" : prev));
@@ -88,10 +91,10 @@ export default function Header() {
 
     // Override localStorage.setItem to dispatch custom event
     const originalSetItem = localStorage.setItem;
-    localStorage.setItem = function(key, value) {
+    localStorage.setItem = function (key, value) {
       originalSetItem.apply(this, [key, value]);
-      if (key === 'simoengil_cart') {
-        window.dispatchEvent(new Event('cart_updated'));
+      if (key === "simoengil_cart") {
+        window.dispatchEvent(new Event("cart_updated"));
       }
     };
 
@@ -156,8 +159,8 @@ export default function Header() {
 
   useEffect(() => {
     const handleChatOpened = () => setIsMobileMenuOpen(false);
-    window.addEventListener('chat_opened', handleChatOpened);
-    return () => window.removeEventListener('chat_opened', handleChatOpened);
+    window.addEventListener("chat_opened", handleChatOpened);
+    return () => window.removeEventListener("chat_opened", handleChatOpened);
   }, []);
 
   const handleFaqClick = (e: React.MouseEvent) => {
@@ -190,59 +193,73 @@ export default function Header() {
   }
 
   // Hide global header on product detail page
-  if (pathname.startsWith('/product/')) return null;
+  if (pathname.startsWith("/product/")) return null;
 
   return (
     <>
       <motion.header
-        onClick={() => window.dispatchEvent(new Event('navbar_interaction'))}
+        onClick={() => window.dispatchEvent(new Event("navbar_interaction"))}
         className={`fixed top-0 left-0 right-0 w-full z-40 transition-all duration-700 ease-in-out will-change-transform ${
           isScrolled ? "pt-2 pb-0 sm:py-4 px-4" : "pt-4 px-6 lg:px-12"
         }`}
       >
-        <div className={`mx-auto transition-all duration-700 ease-in-out ${isScrolled ? "max-w-6xl" : "max-w-full"}`}>
+        <div
+          className={`mx-auto transition-all duration-700 ease-in-out ${isScrolled ? "max-w-6xl" : "max-w-full"}`}
+        >
           {/* Main Navbar Container (Floating Pill Style) */}
-          <div className={`transition-all duration-700 ease-in-out border rounded-2xl md:rounded-[2rem] overflow-hidden ${
-            isScrolled 
-              ? "bg-[#0A0F1D]/90 backdrop-blur-md border-white/10 shadow-xl" 
-              : "bg-transparent backdrop-blur-none border-transparent shadow-none"
-          }`}>
+          <div
+            className={`transition-all duration-700 ease-in-out border rounded-2xl md:rounded-[2rem] ${
+              isScrolled
+                ? "bg-[#0A0F1D]/90 backdrop-blur-md border-white/10 shadow-xl"
+                : "bg-transparent backdrop-blur-none border-transparent shadow-none"
+            }`}
+          >
             {/* Admin Bar (if admin) */}
             {isAdmin && (
-              <div className="w-full bg-slate-900 border-b border-pink-500/30 text-white flex items-center transition-all duration-300">
-                <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left py-1.5 px-4 md:px-6">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="text-pink-400 animate-pulse w-3 h-3 sm:w-4 sm:h-4" />
-                    <p className="text-[9px] sm:text-xs font-semibold tracking-wide">
-                      <span className="hidden sm:inline">Selamat datang, </span>
-                      <span className="text-pink-300 font-black">Admin</span>!
+              <div className="w-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-pink-500/20 text-white flex items-center justify-center transition-all duration-300 rounded-t-2xl md:rounded-t-[2rem] relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/5 opacity-50 mix-blend-overlay"></div>
+                <div className="w-full flex items-center justify-between gap-3 py-2 px-5 md:px-8 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-pink-500/20 rounded-full shrink-0">
+                      <Sparkles className="text-pink-400 animate-pulse w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    </div>
+                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-300">
+                      <span className="hidden sm:inline">Masuk sebagai </span>
+                      <span className="text-pink-300 font-black tracking-widest uppercase">Admin</span>
                     </p>
                   </div>
                   <Link
                     href="/admin-panel/dashboard"
-                    className="inline-flex items-center gap-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-[9px] sm:text-xs font-black py-1 px-3 rounded-lg hover:scale-[1.03] transition-transform"
+                    className="inline-flex items-center gap-1.5 bg-pink-500 hover:bg-pink-400 text-white text-[10px] sm:text-[11px] font-bold py-1.5 px-3.5 rounded-full hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_10px_rgba(236,72,153,0.3)] shrink-0"
                   >
-                    <ShieldCheck className="w-3 h-3" /> Dashboard
+                    <ShieldCheck className="w-3.5 h-3.5" /> 
+                    <span>Buka Panel</span>
                   </Link>
                 </div>
               </div>
             )}
 
             {/* Navbar Content */}
-            <div className={`transition-all duration-700 ease-in-out flex items-center justify-between gap-4 relative ${
-              isScrolled 
-                ? "px-4 sm:px-6 lg:px-8 h-16 sm:h-20" 
-                : "px-0 h-20 sm:h-24"
-            }`}>
+            <div
+              className={`transition-all duration-700 ease-in-out flex items-center justify-between gap-4 relative ${
+                isScrolled
+                  ? "px-4 sm:px-6 lg:px-8 h-16 sm:h-20"
+                  : "px-0 h-20 sm:h-24"
+              }`}
+            >
               {/* Logo & Brand */}
               <Link
                 href="/"
                 onClick={handleHomeClick}
                 className="flex items-center gap-2 sm:gap-3 group shrink-0 min-w-0"
               >
-                <div className={`rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0 transition-all duration-700 ease-in-out ${
-                  isScrolled ? "w-12 h-12 sm:w-15 sm:h-15" : "w-16 h-16 sm:w-20 sm:h-20"
-                }`}>
+                <div
+                  className={`rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0 transition-all duration-700 ease-in-out ${
+                    isScrolled
+                      ? "w-12 h-12 sm:w-15 sm:h-15"
+                      : "w-16 h-16 sm:w-20 sm:h-20"
+                  }`}
+                >
                   <img
                     src="/images/logoNEW.webp"
                     alt="Simoengil Logo"
@@ -250,23 +267,32 @@ export default function Header() {
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className={`font-normal tracking-wide group-hover:text-[#FFB6C8] transition-colors font-magilio block leading-none truncate transition-all duration-700 ease-in-out ${
-                    isScrolled ? "text-lg sm:text-xl text-white" : "text-xl sm:text-2xl text-[#4A3B32] drop-shadow-md"
-                  }`}>
+                  <span
+                    className={`font-normal tracking-wide group-hover:text-[#FFB6C8] transition-colors font-magilio block leading-none truncate transition-all duration-700 ease-in-out ${
+                      isScrolled
+                        ? "text-lg sm:text-xl text-white"
+                        : "text-xl sm:text-2xl text-[#4A3B32] drop-shadow-md"
+                    }`}
+                  >
                     Simoengil
                   </span>
                 </div>
               </Link>
 
               {/* Desktop Navigation */}
-              <nav className={`hidden md:flex items-center gap-1 rounded-full px-2 py-1.5 border transition-all duration-700 ease-in-out absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10 ${
-                isScrolled ? "bg-white/5 border-white/5" : "bg-white/70 backdrop-blur-md border-white/40 shadow-sm"
-              }`}>
+              <nav
+                className={`hidden md:flex items-center gap-1 rounded-full px-2 py-1.5 border transition-all duration-700 ease-in-out absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10 ${
+                  isScrolled
+                    ? "bg-white/5 border-white/5"
+                    : "bg-white/70 backdrop-blur-md border-white/40 shadow-sm"
+                }`}
+              >
                 {navLinks.map((link) => {
                   let isActive = false;
                   if (link.path.includes("#")) {
                     const [basePath, hashPart] = link.path.split("#");
-                    isActive = pathname === basePath && activeHash === `#${hashPart}`;
+                    isActive =
+                      pathname === basePath && activeHash === `#${hashPart}`;
                   } else {
                     if (link.path === "/") {
                       isActive = pathname === "/" && activeHash === "";
@@ -274,19 +300,26 @@ export default function Header() {
                       isActive = pathname === link.path;
                     }
                   }
-                    
+
                   return (
                     <Link
                       key={link.name}
                       href={link.path}
                       onClick={
-                        link.name === "FAQ" ? handleFaqClick :
-                        link.name === "Beranda" ? handleHomeClick : undefined
+                        link.name === "FAQ"
+                          ? handleFaqClick
+                          : link.name === "Beranda"
+                            ? handleHomeClick
+                            : undefined
                       }
                       className={`relative px-4 py-2 text-sm font-bold transition-colors rounded-full flex items-center gap-1.5 ${
                         isActive
-                          ? isScrolled ? "text-white bg-white/10" : "text-[#4A3B32] bg-[#4A3B32]/10"
-                          : isScrolled ? "text-white/70 hover:text-white hover:bg-white/5" : "text-[#4A3B32]/75 hover:text-[#4A3B32] hover:bg-[#4A3B32]/5"
+                          ? isScrolled
+                            ? "text-white bg-white/10"
+                            : "text-[#4A3B32] bg-[#4A3B32]/10"
+                          : isScrolled
+                            ? "text-white/70 hover:text-white hover:bg-white/5"
+                            : "text-[#4A3B32]/75 hover:text-[#4A3B32] hover:bg-[#4A3B32]/5"
                       }`}
                     >
                       <link.icon className="w-4 h-4" />
@@ -323,8 +356,8 @@ export default function Header() {
                   aria-label="Buka keranjang"
                   onClick={() => setIsWishlistOpen(true)}
                   className={`relative p-2.5 rounded-xl border transition-all cursor-pointer ${
-                    isScrolled 
-                      ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                    isScrolled
+                      ? "bg-white/10 hover:bg-white/20 border-white/10 text-white"
                       : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
                   }`}
                 >
@@ -341,8 +374,8 @@ export default function Header() {
                   <Link
                     href="/dashboard"
                     className={`p-2.5 rounded-xl border transition-all ${
-                      isScrolled 
-                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                      isScrolled
+                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white"
                         : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
                     }`}
                   >
@@ -352,8 +385,8 @@ export default function Header() {
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                      isScrolled 
-                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white" 
+                      isScrolled
+                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white"
                         : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
                     }`}
                   >
@@ -367,8 +400,8 @@ export default function Header() {
                 <button
                   onClick={() => setIsWishlistOpen(true)}
                   className={`relative p-2 rounded-lg border cursor-pointer transition-all ${
-                    isScrolled 
-                      ? "bg-white/10 border-white/10 text-white" 
+                    isScrolled
+                      ? "bg-white/10 border-white/10 text-white"
                       : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm"
                   }`}
                 >
@@ -382,8 +415,8 @@ export default function Header() {
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className={`p-2 rounded-lg border cursor-pointer transition-all ${
-                    isScrolled 
-                      ? "bg-white/10 border-white/10 text-white" 
+                    isScrolled
+                      ? "bg-white/10 border-white/10 text-white"
                       : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm"
                   }`}
                 >
@@ -395,89 +428,93 @@ export default function Header() {
                 </button>
               </div>
             </div>
+
+            {/* Mobile Dropdown Menu — inside navbar container for proper flow */}
+            <AnimatePresence>
+              {isMobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+                  className="md:hidden will-change-transform px-4 pb-4"
+                >
+                  <div className="bg-[#0A0F1D]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl p-4 flex flex-col gap-2">
+                    {navLinks.map((link) => {
+                      const isActive =
+                        pathname === link.path ||
+                        (link.path === "/#faq" && false);
+                      return (
+                        <Link
+                          key={link.name}
+                          href={link.path}
+                          onClick={
+                            link.name === "FAQ"
+                              ? handleFaqClick
+                              : () => setIsMobileMenuOpen(false)
+                          }
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-colors ${
+                            isActive
+                              ? "bg-[#FF8FB1]/20 text-[#FFB6C8] border border-[#FF8FB1]/30 shadow-[0_0_15px_rgba(255,143,177,0.1)]"
+                              : "text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <link.icon
+                            className={`w-5 h-5 ${isActive ? "text-[#FFB6C8]" : ""}`}
+                          />
+                          {link.name}
+                        </Link>
+                      );
+                    })}
+
+                    <div className="h-px bg-white/10 my-2" />
+
+                    {user ? (
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors"
+                      >
+                        <User className="w-5 h-5" />
+                        Akun Saya
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors w-full text-left"
+                      >
+                        <User className="w-5 h-5" />
+                        Masuk / Daftar
+                      </button>
+                    )}
+
+                    <a
+                      href="https://wa.me/6281545585448?text=Halo%20Simoengil"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] text-white rounded-xl font-bold"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        viewBox="0 0 16 16"
+                        className="w-6 h-6"
+                      >
+                        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
+                      </svg>
+                      Hubungi WhatsApp
+                    </a>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-
-        {/* Mobile Dropdown Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
-              className="absolute top-[85px] left-4 right-4 max-w-6xl mx-auto pointer-events-auto md:hidden will-change-transform"
-            >
-              <div className="bg-[#0A0F1D]/95 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl p-4 flex flex-col gap-2">
-                {navLinks.map((link) => {
-                  const isActive = pathname === link.path || (link.path === "/#faq" && false);
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.path}
-                      onClick={
-                        link.name === "FAQ"
-                          ? handleFaqClick
-                          : () => setIsMobileMenuOpen(false)
-                      }
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-colors ${
-                        isActive
-                          ? "bg-[#FF8FB1]/20 text-[#FFB6C8] border border-[#FF8FB1]/30 shadow-[0_0_15px_rgba(255,143,177,0.1)]"
-                          : "text-white hover:bg-white/10"
-                      }`}
-                    >
-                      <link.icon className={`w-5 h-5 ${isActive ? "text-[#FFB6C8]" : ""}`} />
-                      {link.name}
-                    </Link>
-                  );
-                })}
-
-                <div className="h-px bg-white/10 my-2" />
-
-                {user ? (
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors"
-                  >
-                    <User className="w-5 h-5" />
-                    Akun Saya
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors w-full text-left"
-                  >
-                    <User className="w-5 h-5" />
-                    Masuk / Daftar
-                  </button>
-                )}
-
-                <a
-                  href="https://wa.me/6281545585448?text=Halo%20Simoengil"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] text-white rounded-xl font-bold"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 16 16"
-                    className="w-6 h-6"
-                  >
-                    <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
-                  </svg>
-                  Hubungi WhatsApp
-                </a>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.header>
 
       {/* DRAWERS & MODALS */}

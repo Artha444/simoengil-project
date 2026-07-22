@@ -57,6 +57,20 @@ interface WhyFeature {
   desc: string;
 }
 
+interface TrustItem {
+  image: string;
+  title: string;
+  description: string;
+}
+
+interface StoryContent {
+  title: string;
+  paragraph1: string;
+  paragraph2: string;
+  paragraph3: string;
+  quote: string;
+}
+
 interface SiteSettings {
   heroTitle: string;
   heroDescription: string;

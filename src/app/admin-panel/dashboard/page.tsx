@@ -117,8 +117,7 @@ export default function AdminDashboardPage() {
   const [shopeePrice, setShopeePrice] = useState('');
 
   // Shopee auto-fetch states
-  const [isFetchingShopee, setIsFetchingShopee] = useState(false);
-  const [shopeeFetchError, setShopeeFetchError] = useState<string | null>(null);
+
 
   // Platform Availability Checks (Default to true)
   const [shopeeAvailable, setShopeeAvailable] = useState<boolean>(true);
@@ -130,6 +129,7 @@ export default function AdminDashboardPage() {
   // Tab State
   const [activeTab, setActiveTab] = useState<'katalog' | 'pesanan' | 'chat'>('katalog');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [modalActiveTab, setModalActiveTab] = useState<'info_dasar' | 'media' | 'marketplace' | 'testimoni' | 'varian'>('info_dasar');
 
   // Site Settings States
   
@@ -282,45 +282,6 @@ export default function AdminDashboardPage() {
     }
   }, [isAuthenticated]);
 
-  // Auto-fetch Shopee data when URL changes
-  useEffect(() => {
-    if (!shopeeLink || !shopeeLink.includes('shopee.co.id') || !shopeeAvailable) return;
-
-    const timer = setTimeout(async () => {
-      setIsFetchingShopee(true);
-      setShopeeFetchError(null);
-
-      try {
-        const res = await fetch('/api/shopee-scraper', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shopeeUrl: shopeeLink }),
-        });
-        const result = await res.json();
-
-        if (result.success && result.data) {
-          const d = result.data;
-          if (d.rating) setRating(String(d.rating));
-          if (d.reviewsCount) setReviewsCount(String(d.reviewsCount));
-          if (d.soldCount) setSoldCount(String(d.soldCount));
-          if (d.price) setShopeePrice(String(d.price));
-          if (d.name) setName(d.name);
-          setShopeeAvailable(true);
-          if (result.partial) {
-            setShopeeFetchError('Auto-fetch tidak bisa ambil data dari Shopee. Field diisi dari URL, silakan edit manual.');
-          }
-        } else {
-          setShopeeFetchError(`Gagal: ${result.errors?.join(', ') || 'Unknown error'}`);
-        }
-      } catch {
-        setShopeeFetchError('Gagal auto-fetch');
-      } finally {
-        setIsFetchingShopee(false);
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [shopeeLink, shopeeAvailable]);
 
 
 
@@ -328,6 +289,7 @@ export default function AdminDashboardPage() {
   const resetForm = () => {
     setIsProductModalOpen(false);
     setEditingId(null);
+    setModalActiveTab('info_dasar');
     setName('');
     setPrice('');
     setCategory('Boneka Beruang');
@@ -342,8 +304,6 @@ export default function AdminDashboardPage() {
     setShopeeLink('');
     setShopeePrice('');
     setShopeeAvailable(true);
-    setIsFetchingShopee(false);
-    setShopeeFetchError(null);
     setAdditionalImages([]);
     setFeatures([]);
     setSoldCount('0');
@@ -828,10 +788,10 @@ export default function AdminDashboardPage() {
           {isProductModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 sm:p-6 backdrop-blur-sm">
             <div className="relative w-full max-w-3xl animate-in fade-in zoom-in-95 duration-200">
-              <div className="bg-white border border-slate-200/80 rounded-[2rem] overflow-hidden shadow-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="bg-white border border-slate-200/80 rounded-[2rem] overflow-hidden shadow-2xl w-full max-h-[90vh] flex flex-col relative">
               
               {/* Form Title & Sticky Header */}
-              <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2.5">
                   <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
                     <PlusCircle className="w-5 h-5" />
@@ -839,6 +799,7 @@ export default function AdminDashboardPage() {
                   {editingId ? 'Simpan Perubahan Boneka' : 'Tambah Boneka Baru'}
                 </h3>
                 <button 
+                  type="button"
                   onClick={() => setIsProductModalOpen(false)} 
                   className="p-2.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full cursor-pointer transition-colors"
                   title="Tutup Form"
@@ -847,15 +808,39 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              {/* Form Scrollable Area */}
-              <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+              {/* Tab Navigation */}
+              <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 overflow-x-auto hide-scrollbar sticky top-[73px] z-10 shrink-0">
+                {[
+                  { id: 'info_dasar', label: 'Info Dasar' },
+                  { id: 'media', label: 'Media' },
+                  { id: 'marketplace', label: 'Marketplace' },
+                  { id: 'testimoni', label: 'Testimoni' },
+                  { id: 'varian', label: 'Varian & Ukuran' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setModalActiveTab(tab.id as any)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      modalActiveTab === tab.id
+                        ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
+                        : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
               {/* Form inputs */}
-              <form onSubmit={handleSaveProduct} className="space-y-3">
+              <form onSubmit={handleSaveProduct} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 p-6 sm:p-8 overflow-y-auto space-y-4">
+                  {modalActiveTab === 'info_dasar' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 
                 {/* Product Name */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                  <label className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">
                     Nama Boneka
                   </label>
                   <input
@@ -871,7 +856,7 @@ export default function AdminDashboardPage() {
                 {/* Price and Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <label className="text-[10px] font-black text-pink-600 uppercase tracking-wider block">
                       Harga Dasar (IDR)
                     </label>
                     <input
@@ -885,7 +870,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                      <label className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">
                         Kategori
                       </label>
                       <button
@@ -942,7 +927,7 @@ export default function AdminDashboardPage() {
                 {/* Rating & Ulasan & Terjual */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider block">
                       Bintang / Rating
                     </label>
                     <input
@@ -958,7 +943,7 @@ export default function AdminDashboardPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block" title="Jumlah Ulasan">
+                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-wider block" title="Jumlah Ulasan">
                       Jumlah Ulasan
                     </label>
                     <input
@@ -971,7 +956,7 @@ export default function AdminDashboardPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block" title="Jumlah Pembelian / Terjual">
+                    <label className="text-[10px] font-black text-purple-600 uppercase tracking-wider block" title="Jumlah Pembelian / Terjual">
                       Jumlah Pembelian
                     </label>
                     <input
@@ -985,36 +970,43 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'media' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* Image URL */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                  <label className="text-[10px] font-black text-teal-600 uppercase tracking-wider block">
                     Gambar Utama Produk
                   </label>
-                  <div className="flex items-center gap-2 w-full">
-                    <input
-                      type="text"
-                      required
-                      placeholder="/images/plushie_teddy.png"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                    />
-                    <label title="Upload Foto" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
-                      <Upload className="w-4 h-4" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, setImageUrl)}
-                      />
-                    </label>
+                  <div className="flex items-center gap-3 w-full">
+                    {imageUrl && (
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-sm">
+                        <img src={imageUrl} alt="Preview Utama" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 overflow-hidden text-ellipsis whitespace-nowrap" title={imageUrl}>
+                        {imageUrl ? imageUrl.split('/').pop() : 'Belum ada foto'}
+                      </div>
+                      <label title="Upload Foto" className="shrink-0 w-9 h-9 flex items-center justify-center bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 rounded-xl cursor-pointer transition-colors shadow-sm">
+                        <Upload className="w-4 h-4" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e, setImageUrl)}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
 
                 {/* Foto Tambahan Produk */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-black text-rose-600 uppercase tracking-wider block">
                       Foto Tambahan Produk (Gallery)
                     </span>
                     <button
@@ -1035,17 +1027,9 @@ export default function AdminDashboardPage() {
                     ) : (
                       additionalImages.map((img, idx) => (
                         <div key={idx} className="flex gap-2 items-center">
-                          <input
-                            type="text"
-                            placeholder="Contoh: /images/detail_fabric.png atau URL luar"
-                            value={img}
-                            onChange={(e) => {
-                              const updated = [...additionalImages];
-                              updated[idx] = e.target.value;
-                              setAdditionalImages(updated);
-                            }}
-                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-1 focus:ring-pink-100 transition-all"
-                          />
+                          <div className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-600 overflow-hidden text-ellipsis whitespace-nowrap" title={img}>
+                            {img ? img.split('/').pop() : 'Belum ada foto tambahan'}
+                          </div>
                           {img && (
                             <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0">
                               {/* Using HTML img tag to bypass Next.js Image component domain constraints in local preview */}
@@ -1081,9 +1065,14 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'info_dasar' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* Spesifikasi (Bahan & Dimensi) */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-2">
+                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block mb-2">
                     Spesifikasi & Bahan Premium
                   </span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1113,7 +1102,7 @@ export default function AdminDashboardPage() {
                 {/* Kelebihan Produk */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-black text-pink-600 uppercase tracking-wider block">
                       Kelebihan Boneka Simoengil
                     </span>
                     <button
@@ -1183,10 +1172,15 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'testimoni' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* Testimoni Pelanggan */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">
                       Testimoni Pelanggan
                     </span>
                     <button
@@ -1273,9 +1267,14 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'info_dasar' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* Description */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                  <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider block">
                     Deskripsi Boneka
                   </label>
                   <textarea
@@ -1288,9 +1287,14 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'marketplace' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* MARKETPLACE LINKS & PRICES FOR BASE PRODUCT */}
                 <div className="bg-slate-50/60 rounded-2xl border border-slate-200 p-3 space-y-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
                     Link & Harga Dasar Marketplace
                   </span>
 
@@ -1312,12 +1316,8 @@ export default function AdminDashboardPage() {
                     <div className="space-y-1">
                       <label className="text-[9px] font-bold text-orange-500 block flex items-center gap-2">
                         Shopee Link
-                        {isFetchingShopee && (
-                          <RefreshCw className="w-3 h-3 animate-spin text-orange-400" />
-                        )}
-                        {shopeeFetchError && (
-                          <span className="text-[8px] text-rose-400 font-normal">{shopeeFetchError}</span>
-                        )}
+
+
                       </label>
                       <div className="flex items-center gap-1">
                         <input
@@ -1325,49 +1325,9 @@ export default function AdminDashboardPage() {
                           placeholder="https://shopee.co.id/..."
                           value={shopeeLink}
                           onChange={(e) => setShopeeLink(e.target.value)}
-                          disabled={!shopeeAvailable || isFetchingShopee}
-                          className="flex-1 px-2 py-1.5 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                          disabled={!shopeeAvailable}
+                          className="w-full px-2 py-1.5 bg-white border border-orange-100 focus:border-orange-300 rounded-lg text-[10px] font-medium text-slate-800 disabled:opacity-40 disabled:bg-slate-100 disabled:cursor-not-allowed"
                         />
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!shopeeLink) return;
-                            setIsFetchingShopee(true);
-                            setShopeeFetchError(null);
-                            try {
-                              const res = await fetch('/api/shopee-scraper', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ shopeeUrl: shopeeLink }),
-                              });
-                              const result = await res.json();
-                              if (result.success && result.data) {
-                                const d = result.data;
-                                if (d.rating) setRating(String(d.rating));
-                                if (d.reviewsCount) setReviewsCount(String(d.reviewsCount));
-                                if (d.soldCount) setSoldCount(String(d.soldCount));
-                                if (d.price) setShopeePrice(String(d.price));
-                                if (d.name) setName(d.name);
-                                setShopeeAvailable(true);
-                                if (result.partial) {
-                                  setShopeeFetchError('Sync: hanya nama dari URL, data lainnya isi manual.');
-                                }
-                              } else {
-                                setShopeeFetchError(result.error || `Gagal: ${result.errors?.join(', ') || 'Unknown'}`);
-                              }
-                            } catch {
-                              setShopeeFetchError('Gagal sync');
-                            } finally {
-                              setIsFetchingShopee(false);
-                            }
-                          }}
-                          disabled={!shopeeAvailable || isFetchingShopee || !shopeeLink}
-                          className="shrink-0 px-2 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border border-orange-100 flex items-center gap-1"
-                          title="Sync data dari Shopee"
-                        >
-                          <RefreshCw className={`w-3 h-3 ${isFetchingShopee ? 'animate-spin' : ''}`} />
-                          <span>Sync</span>
-                        </button>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -1386,10 +1346,15 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                    </div>
+                  )}
+
+                  {modalActiveTab === 'varian' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
                 {/* DYNAMIC TYPES SECTION */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider block">
                       Kelola Variasi (Warna/Model)
                     </span>
                     <button
@@ -1480,7 +1445,7 @@ export default function AdminDashboardPage() {
                 {/* DYNAMIC SIZES SECTION */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-black text-teal-600 uppercase tracking-wider block">
                       Kelola Ukuran
                     </span>
                     <button
@@ -1537,31 +1502,42 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Submit Action */}
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="w-full py-3 bg-pink-400 hover:bg-pink-500 text-white rounded-2xl font-bold text-xs transition-all shadow-md shadow-pink-500/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Menyimpan Produk...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5" />
-                      <span>{editingId ? 'Simpan Perubahan' : 'Tambah Boneka ke Katalog'}</span>
-                    </>
+                    </div>
                   )}
-                </button>
+                </div>
+                
+                {/* Sticky Footer */}
+                <div className="p-4 sm:px-6 sm:py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 sticky bottom-0 z-20">
+                  <button
+                    type="button"
+                    onClick={() => setIsProductModalOpen(false)}
+                    className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-pink-500/20 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Simpan Perubahan
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
-              </div>
-            </div>
             </div>
           </div>
-          )}
+        </div>
+        )}
 
         </div>
         ) : activeTab === 'pesanan' ? (
