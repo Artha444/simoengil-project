@@ -140,7 +140,7 @@ export default function AuthModal({
       <div className={`relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-pink-100/50 flex flex-col transition-all duration-300 transform ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-8'}`}>
         
         {/* Decorative Top Border */}
-        <div className="h-2 w-full bg-gradient-to-r from-pink-300 via-pink-400 to-amber-300" />
+        <div className="h-2 w-full bg-gradient-to-r from-[#FFB6C8] via-[#FF8FB1] to-[#FFE4E1]" />
 
         {/* Close Button */}
         <button
@@ -155,8 +155,8 @@ export default function AuthModal({
         <div className="p-8 flex flex-col max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#FFF5F0] border border-[#FFB6C8]/40 flex items-center justify-center text-[#FF8FB1] mx-auto mb-3.5 shadow-sm">
-              <Smile className="w-7 h-7 text-[#E8B37D]" />
+            <div className="w-16 h-16 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0 mx-auto mb-3.5 shadow-sm">
+              <img src="/images/logoNEW.webp" alt="Simoengil Logo" className="w-full h-full object-cover" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight font-heading">
               Masuk ke Simoengil
@@ -210,7 +210,7 @@ export default function AuthModal({
 
             {/* hCaptcha Component */}
             {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
-              <div className="flex justify-center overflow-hidden py-1">
+              <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full">
                 <HCaptcha
                   ref={captchaRef}
                   sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
@@ -231,10 +231,13 @@ export default function AuthModal({
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Kirim Magic Link</span>
+                  <span>Kirim Tautan Login</span>
                 </>
               )}
             </button>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 text-center leading-relaxed font-medium pt-1">
+              Dengan masuk, kamu menyetujui <a href="/privacy" className="text-[#FF8FB1] hover:underline">Kebijakan Privasi</a> dan <a href="/terms" className="text-[#FF8FB1] hover:underline">Syarat Layanan</a> kami.
+            </p>
           </form>
 
           {/* Social Logins */}
@@ -245,7 +248,7 @@ export default function AuthModal({
               <div className="flex-grow border-t border-slate-200"></div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-2 gap-3 mt-4">
               <button
                 type="button"
                 onClick={() => handleOAuthLogin('google')}
@@ -267,16 +270,6 @@ export default function AuthModal({
               >
                 <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOAuthLogin('linkedin_oidc')}
-                className="flex items-center justify-center py-2.5 px-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
-                title="LinkedIn"
-              >
-                <svg className="w-5 h-5 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
               </button>
             </div>
