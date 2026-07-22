@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 /**
  * Supabase Client Configuration
@@ -23,5 +23,6 @@ if (supabaseUrl === 'https://dummy-project-id.supabase.co') {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Gunakan createBrowserClient agar cookie auth terbaca oleh semua komponen yang masih import dari @/lib/supabase
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 export default supabase;

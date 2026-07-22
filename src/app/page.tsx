@@ -584,7 +584,7 @@ export default function Home() {
           <div
             ref={bgRef}
             className="absolute inset-0 w-full h-[130%] top-0 bg-cover bg-[30%_35%] md:bg-center bg-no-repeat z-0 pointer-events-none"
-            style={{ backgroundImage: "url('/images/hero.png')" }}
+            style={{ backgroundImage: "url('/images/-boneka_interior.webp')" }}
           />
           {/* Sunlight Beams from Window */}
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
