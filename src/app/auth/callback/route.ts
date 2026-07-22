@@ -30,8 +30,12 @@ export async function GET(request: Request) {
       },
     });
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const userRole = data.user?.user_metadata?.role;
+      if (userRole === 'admin') {
+        return NextResponse.redirect(`${origin}/admin-panel/dashboard`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
