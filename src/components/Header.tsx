@@ -28,8 +28,42 @@ export default function Header() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeHash, setActiveHash] = useState("");
+
+  const getAvatarStyle = (emailStr: string) => {
+    const colors = [
+      'from-emerald-400 to-teal-500',
+      'from-cyan-400 to-blue-500',
+      'from-indigo-400 to-violet-500',
+      'from-fuchsia-400 to-pink-500',
+      'from-rose-400 to-red-500',
+      'from-orange-400 to-amber-500',
+      'from-sky-400 to-indigo-500'
+    ];
+    let hash = 0;
+    for (let i = 0; i < emailStr.length; i++) {
+      hash = emailStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return `bg-gradient-to-br ${colors[index]}`;
+  };
+
+  const getInitials = (name?: string, emailStr?: string) => {
+    if (name) {
+      const parts = name.trim().split(' ');
+      if (parts.length > 1) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.substring(0, 1).toUpperCase();
+    }
+    if (emailStr) {
+      return emailStr.substring(0, 1).toUpperCase();
+    }
+    return 'U';
+  };
 
   useEffect(() => {
     setActiveHash(window.location.hash);
@@ -188,7 +222,7 @@ export default function Header() {
     { name: "Katalog", path: "/products", icon: Grid },
     { name: "FAQ", path: "/#faq", icon: HelpCircle },
   ];
-  if (pathname === "/dashboard" || pathname === "/admin-panel/dashboard") {
+  if (pathname.startsWith("/account") || pathname === "/admin-panel/dashboard") {
     return null;
   }
 
@@ -266,15 +300,15 @@ export default function Header() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex items-center h-full">
                   <span
-                    className={`font-normal tracking-wide group-hover:text-[#FFB6C8] transition-colors font-magilio block leading-none truncate transition-all duration-700 ease-in-out ${
+                    className={`font-magilio tracking-tight group-hover:text-[#FFB6C8] transition-colors block leading-none truncate transition-all duration-700 ease-in-out ${
                       isScrolled
-                        ? "text-lg sm:text-xl text-white"
-                        : "text-xl sm:text-2xl text-[#4A3B32] drop-shadow-md"
+                        ? "text-2xl sm:text-3xl text-white"
+                        : "text-3xl sm:text-4xl text-[#4A3B32] drop-shadow-md"
                     }`}
                   >
-                    Simoengil
+                    Simoengil.
                   </span>
                 </div>
               </Link>
@@ -372,14 +406,22 @@ export default function Header() {
                 {/* User */}
                 {user ? (
                   <Link
-                    href="/account/settings/profile"
-                    className={`p-2.5 rounded-xl border transition-all ${
+                    href="/account"
+                    className={`p-0.5 rounded-full border transition-all ${
                       isScrolled
-                        ? "bg-white/10 hover:bg-white/20 border-white/10 text-white"
-                        : "bg-white/70 backdrop-blur-md border-white/40 text-[#4A3B32] shadow-sm hover:bg-white/90"
+                        ? "border-white/20 hover:border-white/40"
+                        : "border-pink-200 hover:border-pink-300"
                     }`}
                   >
-                    <User className="w-4.5 h-4.5" />
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${!user.user_metadata?.avatar_url ? getAvatarStyle(user.email || '') : 'bg-white'}`}>
+                      {user.user_metadata?.avatar_url ? (
+                        <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-black text-white text-sm tracking-tighter drop-shadow-sm">
+                          {getInitials(user.user_metadata?.full_name, user.email)}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 ) : (
                   <button
@@ -471,7 +513,7 @@ export default function Header() {
 
                     {user ? (
                       <Link
-                        href="/account/settings/profile"
+                        href="/account"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors"
                       >

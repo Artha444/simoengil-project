@@ -21,9 +21,13 @@ import {
   ShoppingCart,
   Home,
   Grid,
-  HelpCircle,
   ShieldCheck,
   Sparkles,
+  Settings,
+  Pencil,
+  Loader2,
+  Camera,
+  ChevronRight,
 } from "lucide-react";
 import { WishlistDrawer } from "@/components/WishlistDrawer";
 
@@ -36,6 +40,8 @@ export default function UserDashboard() {
   const [cart, setCart] = useState<any[]>([]);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const handleUpdateCartQuantity = (cartItemId: string, delta: number) => {
     const updated = cart.map((item) => {
@@ -58,6 +64,60 @@ export default function UserDashboard() {
   const handleProductDetailClick = (p: any) => {
     setIsWishlistOpen(false);
     router.push(`/product/${p.id}`);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Format file tidak didukung. Harap unggah gambar.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran gambar maksimal 2MB.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mengunggah gambar');
+
+      const avatarUrl = data.url;
+
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+
+      await supabase.auth.updateUser({
+        data: { avatar_url: avatarUrl }
+      });
+
+      setUser({
+        ...user,
+        user_metadata: {
+          ...user.user_metadata,
+          avatar_url: avatarUrl
+        }
+      });
+      alert('Foto profil berhasil diperbarui!');
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || 'Terjadi kesalahan saat mengunggah foto.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const fetchUserOrders = async (userId: string) => {
@@ -271,10 +331,10 @@ export default function UserDashboard() {
       if (parts.length > 1) {
         return (parts[0][0] + parts[1][0]).toUpperCase();
       }
-      return name.substring(0, 2).toUpperCase();
+      return name.substring(0, 1).toUpperCase();
     }
     if (email) {
-      return email.substring(0, 2).toUpperCase();
+      return email.substring(0, 1).toUpperCase();
     }
     return 'U';
   };
@@ -293,89 +353,131 @@ export default function UserDashboard() {
   if (!user) return null;
 
   return (
-    <div className="mt-0 min-h-screen bg-[#F8FAFC] text-slate-800 antialiased selection:bg-pink-100 selection:text-pink-600 pb-20">
-      
-      {/* Premium Top Navigation Bar */}
-      <nav className="sticky top-0 w-full z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 h-16 grid grid-cols-3 items-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-pink-500 transition-colors justify-self-start"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Kembali</span>
-          </Link>
-          <div className="font-black text-lg tracking-tight whitespace-nowrap text-center" style={{ color: '#FF8FB1' }}>
-            Simoengil.
-          </div>
-          <div></div>
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto w-full relative z-10 px-0 sm:px-4 mt-0 sm:mt-6">
+    <div className="w-full space-y-8">
         
         {/* HERO PROFILE SECTION */}
-        <div className="bg-white sm:rounded-3xl shadow-sm border-x border-b sm:border border-slate-200/60 overflow-hidden relative group">
-          {/* Cover Banner */}
-          <div className="h-32 sm:h-48 w-full bg-gradient-to-tr from-pink-200 via-rose-100 to-purple-100 relative overflow-hidden">
-            <div className="absolute inset-0 bg-cute-pattern opacity-20 mix-blend-overlay"></div>
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/20 blur-2xl rounded-full"></div>
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-pink-400/20 blur-2xl rounded-full"></div>
-            {/* Logout Button Absolute */}
-            <button
-              onClick={handleLogout}
-              className="absolute top-4 right-4 bg-white/40 hover:bg-white/80 backdrop-blur-md text-rose-600 hover:text-rose-700 p-2.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-full font-bold text-xs flex items-center gap-2 shadow-sm transition-all border border-white/50"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Keluar Akun</span>
-            </button>
+        <div className="flex flex-col items-center pt-6 pb-2 relative">
+          
+          {/* Top Right Camera Icon for Upload */}
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
+            <label className="cursor-pointer p-2.5 sm:p-3 bg-white hover:bg-slate-50 text-slate-700 rounded-full shadow-sm border border-slate-200 flex items-center justify-center transition-all group">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleAvatarUpload}
+                disabled={isUploading}
+              />
+              {isUploading ? (
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+              ) : (
+                <div className="relative">
+                  <Camera className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" />
+                  <div className="absolute -top-1 -right-1 bg-pink-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center text-[10px] font-black border border-white leading-none pb-0.5">+</div>
+                </div>
+              )}
+            </label>
           </div>
 
-          {/* User Info Container */}
-          <div className="px-6 sm:px-8 pb-8 relative">
-            <div className="relative -mt-12 sm:-mt-16 mb-4 flex justify-between items-end">
-              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white ${getAvatarStyle(user.email || '', user.user_metadata?.role)} shadow-xl flex items-center justify-center text-white ring-4 ring-slate-50 relative overflow-hidden group-hover:scale-105 transition-transform duration-500`}>
-                {user.user_metadata?.role === 'admin' ? (
-                  <img src="/favicon.png" alt="Admin" className="w-full h-full object-cover bg-white p-2" />
-                ) : (
-                  <span className="font-black text-white text-4xl sm:text-5xl uppercase tracking-tighter drop-shadow-md">
-                    {getInitials(user.user_metadata?.full_name, user.email)}
-                  </span>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+          {/* Avatar Container */}
+          <label className="relative cursor-pointer group mt-4 sm:mt-6">
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleAvatarUpload}
+              disabled={isUploading}
+            />
+            <div className={`w-32 h-32 sm:w-40 sm:h-40 rounded-full border-[6px] border-white shadow-sm ring-1 ring-slate-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105 ${!user.user_metadata?.avatar_url && user.user_metadata?.role !== 'admin' ? getAvatarStyle(user.email || '') : 'bg-white'}`}>
+              {user.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : user.user_metadata?.role === 'admin' ? (
+                <img src="/favicon.png" alt="Admin" className="w-full h-full object-cover p-2" />
+              ) : (
+                <span className="font-black text-white text-5xl sm:text-6xl uppercase tracking-tighter drop-shadow-md">
+                  {getInitials(user.user_metadata?.full_name, user.email)}
+                </span>
+              )}
+            </div>
+            {/* PRO Badge / Role Badge overlapping avatar */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
+              <div className="bg-pink-500 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full border-2 border-white shadow-sm uppercase tracking-widest whitespace-nowrap">
+                {user.user_metadata?.role === 'admin' ? 'Admin' : 'Member'}
               </div>
             </div>
+          </label>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                  {user.user_metadata?.full_name || "Pelanggan Setia"}
-                  <ShieldCheck className="w-6 h-6 text-blue-500" />
-                </h1>
-                <p className="text-slate-500 font-medium flex items-center gap-2 mt-1 text-sm sm:text-base">
-                  {user.email}
-                </p>
-                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200/50 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Simoengil Member
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="flex gap-3 sm:gap-6 mt-4 sm:mt-0 bg-slate-50/80 p-3 sm:p-4 rounded-2xl border border-slate-100">
-                <div className="text-center px-3 sm:px-5">
-                  <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pesanan</p>
-                  <p className="text-xl sm:text-2xl font-black text-slate-800">{orders.length}</p>
-                </div>
-                <div className="w-[1px] bg-slate-200"></div>
-                <div className="text-center px-3 sm:px-5">
-                  <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Poin</p>
-                  <p className="text-xl sm:text-2xl font-black text-pink-500">0</p>
-                </div>
-              </div>
-            </div>
+          {/* User Info */}
+          <div className="text-center mt-7 space-y-1">
+             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-heading flex items-center justify-center gap-2">
+                {user.user_metadata?.full_name || "Pelanggan Setia"}
+                {user.user_metadata?.role === 'admin' && <ShieldCheck className="w-5 h-5 text-blue-500" />}
+             </h1>
+             <p className="text-slate-500 font-medium text-sm sm:text-base">
+                {user.email}
+             </p>
           </div>
         </div>
+
+        {/* BOTTOM MENU SECTION (White Container) */}
+        <div className="bg-white rounded-t-[2.5rem] shadow-[0_-4px_25px_-10px_rgba(0,0,0,0.05)] w-full min-h-[60vh] p-6 sm:p-10 mt-4 sm:mt-8 relative z-10 border-x border-t border-slate-100">
+          <div className="max-w-3xl mx-auto space-y-3">
+            
+            <Link href="/account/settings/profile" className="flex items-center justify-between p-4 sm:p-5 hover:bg-pink-50/50 rounded-3xl transition-all group cursor-pointer border border-transparent hover:border-pink-100/50">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-pink-100 text-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="font-bold text-slate-800 sm:text-lg">Edit profile</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-pink-400 transition-colors" />
+            </Link>
+
+            <div onClick={() => document.getElementById('orders-section')?.scrollIntoView({ behavior: 'smooth' })} 
+              className="flex items-center justify-between p-4 sm:p-5 hover:bg-indigo-50/50 rounded-3xl transition-all group cursor-pointer border border-transparent hover:border-indigo-100/50">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-100 text-indigo-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="font-bold text-slate-800 sm:text-lg">My orders</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
+            </div>
+
+            <Link href="/account/settings/security" className="flex items-center justify-between p-4 sm:p-5 hover:bg-orange-50/50 rounded-3xl transition-all group cursor-pointer border border-transparent hover:border-orange-100/50">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="font-bold text-slate-800 sm:text-lg">Settings</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-orange-400 transition-colors" />
+            </Link>
+
+            <Link href="mailto:support@simoengil.com" className="flex items-center justify-between p-4 sm:p-5 hover:bg-slate-50/80 rounded-3xl transition-all group cursor-pointer border border-transparent hover:border-slate-200/60">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="font-bold text-slate-800 sm:text-lg">Help</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            </Link>
+            
+            <div onClick={() => setIsLogoutModalOpen(true)} className="flex items-center justify-between p-4 sm:p-5 hover:bg-rose-50/50 rounded-3xl transition-all group cursor-pointer border border-transparent hover:border-rose-100/50">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <span className="font-bold text-rose-600 sm:text-lg">Logout</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-rose-300 group-hover:text-rose-500 transition-colors" />
+            </div>
+            
+            <div className="w-full h-px bg-slate-100 my-8 sm:my-10"></div>
+
+            {/* ORDER HISTORY SECTION INSIDE WHITE CARD */}
+            <div id="orders-section">
 
         {/* ORDER HISTORY SECTION */}
         <div className="mt-6 px-4 sm:px-0">
@@ -603,7 +705,40 @@ export default function UserDashboard() {
             </div>
           )}
         </div>
-      </main>
+
+            </div>
+          </div>
+        </div>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsLogoutModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-sm rounded-3xl p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5">
+              <LogOut className="w-8 h-8 pr-1" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 text-center mb-2">Keluar Akun?</h3>
+            <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
+              Apakah Anda yakin ingin keluar? Anda perlu masuk kembali untuk berbelanja dan melihat pesanan Anda.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleLogout}
+                className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 px-4 rounded-2xl transition-all active:scale-95 shadow-md shadow-rose-500/20"
+              >
+                Ya, Keluar Akun
+              </button>
+              <button
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-2xl transition-all active:scale-95"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* WISHLIST DRAWER */}
       <WishlistDrawer

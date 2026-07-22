@@ -10,6 +10,15 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/account',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {
