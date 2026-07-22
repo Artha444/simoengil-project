@@ -372,7 +372,7 @@ export default function Header() {
                 {/* User */}
                 {user ? (
                   <Link
-                    href="/dashboard"
+                    href="/account/settings/profile"
                     className={`p-2.5 rounded-xl border transition-all ${
                       isScrolled
                         ? "bg-white/10 hover:bg-white/20 border-white/10 text-white"
@@ -471,7 +471,7 @@ export default function Header() {
 
                     {user ? (
                       <Link
-                        href="/dashboard"
+                        href="/account/settings/profile"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-colors"
                       >
