@@ -1,24 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mail, AlertCircle, Sparkles, Smile, ArrowRight, CheckCircle } from 'lucide-react';
+import { X, Mail, AlertCircle, Sparkles, Lock, ArrowRight, CheckCircle, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { lockBodyScroll } from '@/lib/scrollLock';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
+
+type AuthMode = 'login' | 'register' | 'magic_link';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  initialMode?: 'login' | 'register'; // Kept for backwards compatibility
+  initialMode?: 'login' | 'register';
 }
 
 export default function AuthModal({
   isOpen,
   onClose,
   onSuccess,
+  initialMode = 'login',
 }: AuthModalProps) {
+  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +40,10 @@ export default function AuthModal({
       setIsRendered(true);
       setTimeout(() => setIsVisible(true), 10);
       
+      setAuthMode(initialMode);
       setEmail('');
+      setPassword('');
+      setShowPassword(false);
       setErrorMsg(null);
       setInfoMsg(null);
       setCaptchaToken(null);
@@ -49,7 +58,7 @@ export default function AuthModal({
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, initialMode]);
 
   useEffect(() => {
     return () => lockBodyScroll(false, 'auth');
@@ -86,31 +95,60 @@ export default function AuthModal({
     }
   };
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setInfoMsg(null);
 
-    // Enforce captcha if sitekey is configured
     if (process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && !captchaToken) {
-      setErrorMsg('Silakan selesaikan CAPTCHA terlebih dahulu.');
+      setErrorMsg('Silakan selesaikan centang keamanan (CAPTCHA) terlebih dahulu ya.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: getRedirectUrl(),
-          captchaToken: captchaToken || undefined,
-        },
-      });
-      
-      if (error) throw error;
-      
-      setInfoMsg('Magic Link telah dikirim! Silakan periksa inbox atau folder spam email Anda untuk masuk.');
+      if (authMode === 'register') {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: getRedirectUrl(),
+            captchaToken: captchaToken || undefined,
+          },
+        });
+        if (error) throw error;
+        
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          setErrorMsg('Email ini sudah terdaftar. Silakan masuk (login) alih-alih mendaftar.');
+        } else {
+          setInfoMsg('Pendaftaran berhasil! Cek inbox email kamu untuk memverifikasi akun ya. Jangan lupa cek folder spam juga.');
+        }
+      } else if (authMode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: {
+            captchaToken: captchaToken || undefined,
+          }
+        });
+        if (error) throw error;
+        // Success
+        onClose();
+        if (onSuccess) onSuccess();
+        // Force refresh to update user state everywhere
+        window.location.reload();
+      } else if (authMode === 'magic_link') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: getRedirectUrl(),
+            captchaToken: captchaToken || undefined,
+          },
+        });
+        if (error) throw error;
+        setInfoMsg('Cek inbox email kamu, link login sudah dikirim! Jangan lupa cek folder spam juga ya.');
+      }
       
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
@@ -118,7 +156,11 @@ export default function AuthModal({
       setCaptchaToken(null);
       
     } catch (err: any) {
-      setErrorMsg(err.message || 'Terjadi kesalahan saat memproses permintaan.');
+      if (err.message.includes('Invalid login credentials')) {
+        setErrorMsg('Email atau password salah, coba lagi ya.');
+      } else {
+        setErrorMsg(err.message || 'Terjadi kesalahan saat memproses permintaan.');
+      }
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
       }
@@ -140,35 +182,35 @@ export default function AuthModal({
       <div className={`relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-pink-100/50 flex flex-col transition-all duration-300 transform ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-8'}`}>
         
         {/* Decorative Top Border */}
-        <div className="h-2 w-full bg-gradient-to-r from-[#FFB6C8] via-[#FF8FB1] to-[#FFE4E1]" />
+        <div className="h-2 w-full bg-gradient-to-r from-pink-300 via-pink-400 to-pink-200" />
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 z-20 p-2 rounded-full bg-slate-100 hover:bg-[#FFF5F0] text-slate-500 hover:text-[#FF8FB1] transition-all duration-300 cursor-pointer"
+          className="absolute top-5 right-5 z-20 p-2 rounded-full bg-slate-100 hover:bg-pink-50 text-slate-500 hover:text-pink-500 transition-all duration-300 cursor-pointer"
           aria-label="Tutup"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Content */}
-        <div className="p-8 flex flex-col max-h-[85vh] overflow-y-auto">
+        <div className="p-8 flex flex-col max-h-[85vh] overflow-y-auto no-scrollbar">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-16 h-16 rounded-full border-2 border-[#FFB6C8] bg-white flex items-center justify-center overflow-hidden shrink-0 mx-auto mb-3.5 shadow-sm">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-200 bg-white flex items-center justify-center overflow-hidden shrink-0 mx-auto mb-3.5 shadow-sm">
               <img src="/images/logoNEW.webp" alt="Simoengil Logo" className="w-full h-full object-cover" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight font-heading">
-              Masuk ke Simoengil
+              {authMode === 'login' ? 'Masuk ke Akun' : authMode === 'register' ? 'Daftar Akun Baru' : 'Masuk Tanpa Sandi'}
             </h2>
             <p className="text-slate-400 text-xs mt-1.5 font-medium leading-relaxed">
-              Login aman dan cepat via Email atau Sosial Media!
+              {authMode === 'login' || authMode === 'register' ? 'Gunakan email dan password kamu.' : 'Kami akan mengirimkan link ajaib ke emailmu.'}
             </p>
           </div>
 
           {/* Messages */}
           {errorMsg && (
-            <div className="mb-4 bg-rose-50 border border-rose-100 rounded-2xl p-3.5 flex items-start gap-2.5 text-rose-700 text-xs">
+            <div className="mb-4 bg-rose-50 border border-rose-100 rounded-2xl p-3.5 flex items-start gap-2.5 text-rose-700 text-xs animate-in fade-in slide-in-from-top-2">
               <AlertCircle className="w-4.5 h-4.5 shrink-0 text-rose-500" />
               <div className="space-y-0.5">
                 <span className="font-extrabold block">Gagal memproses</span>
@@ -178,7 +220,7 @@ export default function AuthModal({
           )}
 
           {infoMsg && (
-            <div className="mb-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-start gap-2.5 text-emerald-700 text-xs">
+            <div className="mb-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-start gap-2.5 text-emerald-700 text-xs animate-in fade-in slide-in-from-top-2">
               <CheckCircle className="w-4.5 h-4.5 shrink-0 text-emerald-500" />
               <div className="space-y-0.5">
                 <span className="font-extrabold block">Pemberitahuan</span>
@@ -188,7 +230,7 @@ export default function AuthModal({
           )}
 
           {/* Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                 Alamat Email
@@ -208,47 +250,100 @@ export default function AuthModal({
               </div>
             </div>
 
+            {(authMode === 'login' || authMode === 'register') && (
+              <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Minimal 6 karakter"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all placeholder:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* hCaptcha Component */}
             {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
-              <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full">
+              <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full animate-in fade-in zoom-in-95 duration-200">
                 <HCaptcha
                   ref={captchaRef}
                   sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
                   onVerify={(token) => setCaptchaToken(token)}
                   onExpire={() => setCaptchaToken(null)}
+                  languageOverride="id"
                 />
               </div>
             )}
 
-            {/* Email Submit Button */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading || (!!process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && !captchaToken)}
-              className="w-full py-3 bg-[#FF8FB1] hover:bg-[#ff7a9f] text-white rounded-2xl font-black text-xs sm:text-sm transition-all shadow-md shadow-pink-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-black text-xs sm:text-sm transition-all shadow-md shadow-pink-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Kirim Tautan Login</span>
+                  {authMode === 'login' ? <LogIn className="w-4 h-4" /> : authMode === 'register' ? <UserPlus className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                  <span>{authMode === 'login' ? 'Masuk' : authMode === 'register' ? 'Daftar Sekarang' : 'Kirim Link Login'}</span>
                 </>
               )}
             </button>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 text-center leading-relaxed font-medium pt-1">
-              Dengan masuk, kamu menyetujui <a href="/privacy" className="text-[#FF8FB1] hover:underline">Kebijakan Privasi</a> dan <a href="/terms" className="text-[#FF8FB1] hover:underline">Syarat Layanan</a> kami.
-            </p>
+
+            {/* Toggle Modes */}
+            <div className="flex flex-col gap-2.5 pt-2 text-center text-xs font-bold text-slate-500">
+              {authMode === 'login' && (
+                <>
+                  <button type="button" onClick={() => { setAuthMode('register'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors">
+                    Belum punya akun? <span className="text-pink-500">Daftar di sini</span>
+                  </button>
+                  <button type="button" onClick={() => { setAuthMode('magic_link'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors text-[11px] font-medium mt-1">
+                    Lupa password? Masuk pakai link email sebagai gantinya
+                  </button>
+                </>
+              )}
+              {authMode === 'register' && (
+                <button type="button" onClick={() => { setAuthMode('login'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors">
+                  Sudah punya akun? <span className="text-pink-500">Masuk di sini</span>
+                </button>
+              )}
+              {authMode === 'magic_link' && (
+                <button type="button" onClick={() => { setAuthMode('login'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors flex items-center justify-center gap-1">
+                  <ArrowRight className="w-3 h-3 rotate-180" /> Kembali ke Login Password
+                </button>
+              )}
+            </div>
+
           </form>
 
           {/* Social Logins */}
-          <div className="mt-6">
+          <div className="mt-4">
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-slate-200"></div>
               <span className="flex-shrink-0 mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-wider">Atau masuk dengan</span>
               <div className="flex-grow border-t border-slate-200"></div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="grid grid-cols-2 gap-3 mt-3">
               <button
                 type="button"
                 onClick={() => handleOAuthLogin('google')}
@@ -273,6 +368,10 @@ export default function AuthModal({
                 </svg>
               </button>
             </div>
+            
+            <p className="text-[9px] sm:text-[10px] text-slate-400 text-center leading-relaxed font-medium mt-4">
+              Dengan masuk, kamu menyetujui <a href="/privacy" className="text-pink-500 hover:underline">Kebijakan Privasi</a> dan <a href="/terms" className="text-pink-500 hover:underline">Syarat Layanan</a> kami.
+            </p>
           </div>
         </div>
       </div>
