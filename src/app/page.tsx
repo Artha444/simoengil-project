@@ -482,8 +482,7 @@ export default function Home() {
     try {
       const { error } = await supabase
         .from("site_settings")
-        .update({ settings: newSettings })
-        .eq("id", "homepage");
+        .upsert({ id: "homepage", settings: newSettings });
 
       if (error) throw error;
     } catch (err) {
