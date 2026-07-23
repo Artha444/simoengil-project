@@ -72,14 +72,46 @@ export default function AuthModal({
     setErrorMsg(null);
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: getRedirectUrl(),
+          skipBrowserRedirect: true,
+          redirectTo: `${window.location.origin}/auth/callback?next=/auth/popup-callback`,
         },
       });
 
       if (error) throw new Error(error.message);
+      
+      if (data?.url) {
+        const width = 500;
+        const height = 600;
+        const left = typeof window !== 'undefined' ? window.screenX + (window.outerWidth - width) / 2 : 0;
+        const top = typeof window !== 'undefined' ? window.screenY + (window.outerHeight - height) / 2 : 0;
+        
+        const popup = window.open(
+          data.url,
+          'SupabaseAuthPopup',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+        
+        const messageListener = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          if (event.data === 'AUTH_SUCCESS') {
+            window.removeEventListener('message', messageListener);
+            window.location.reload(); 
+          }
+        };
+        
+        window.addEventListener('message', messageListener);
+
+        const checkClosed = setInterval(() => {
+          if (popup && popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageListener);
+            setIsLoading(false);
+          }
+        }, 1000);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || `Gagal login dengan ${provider}.`);
       setIsLoading(false);
