@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mail, AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
+import { X, Mail, AlertCircle, Sparkles, CheckCircle, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { lockBodyScroll } from '@/lib/scrollLock';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
@@ -19,6 +19,8 @@ export default function AuthModal({
   onSuccess,
 }: AuthModalProps) {
   const [email, setEmail] = useState('');
+  const [authStep, setAuthStep] = useState<'email' | 'otp'>('email');
+  const [otpCode, setOtpCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +37,8 @@ export default function AuthModal({
       setTimeout(() => setIsVisible(true), 10);
       
       setEmail('');
+      setAuthStep('email');
+      setOtpCode('');
       setErrorMsg(null);
       setInfoMsg(null);
       setCaptchaToken(null);
@@ -141,7 +145,8 @@ export default function AuthModal({
       });
       
       if (error) throw error;
-      setInfoMsg('Cek inbox email kamu, link login sudah dikirim! Jangan lupa cek folder spam juga ya.');
+      setInfoMsg('Kode OTP dan tautan ajaib telah dikirim ke emailmu. Cek folder spam juga ya.');
+      setAuthStep('otp');
       
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
@@ -181,6 +186,29 @@ export default function AuthModal({
       }
       setCaptchaToken(null);
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setInfoMsg(null);
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
+      });
+
+      if (error) throw error;
+      if (data?.session) {
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Kode OTP salah atau sudah kadaluarsa.');
       setIsLoading(false);
     }
   };
@@ -242,58 +270,112 @@ export default function AuthModal({
           )}
 
           {/* Form */}
-          <form onSubmit={handleAuthSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                Alamat Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4 text-slate-400" />
+          {authStep === 'email' ? (
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                  Alamat Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    placeholder="nama@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all placeholder:text-slate-400"
+                  />
                 </div>
-                <input
-                  type="email"
-                  required
-                  placeholder="nama@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all placeholder:text-slate-400"
-                />
               </div>
-            </div>
 
-            {/* hCaptcha Component */}
-            {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
-              <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full animate-in fade-in zoom-in-95 duration-200">
-                <HCaptcha
-                  ref={captchaRef}
-                  sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
-                  onVerify={(token) => setCaptchaToken(token)}
-                  onExpire={() => setCaptchaToken(null)}
-                  languageOverride="id"
-                />
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || (!!process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && !captchaToken)}
-              className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-black text-xs sm:text-sm transition-all shadow-md shadow-pink-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Kirim Link Login</span>
-                </>
+              {/* hCaptcha Component */}
+              {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
+                <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full animate-in fade-in zoom-in-95 duration-200">
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY}
+                    onVerify={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken(null)}
+                    languageOverride="id"
+                  />
+                </div>
               )}
-            </button>
-          </form>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || (!!process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && !captchaToken)}
+                className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-black text-xs sm:text-sm transition-all shadow-md shadow-pink-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Kirim Link Login</span>
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4 animate-in fade-in slide-in-from-right-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block text-center">
+                  Masukkan 6-Digit Kode OTP
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full py-4 text-center text-3xl tracking-[0.5em] bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all placeholder:text-slate-300"
+                  />
+                </div>
+                <p className="text-[10px] text-center text-slate-500 mt-2">
+                  Atau buka email di HP Anda dan klik tombol <b>"Log in"</b> secara langsung.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthStep('email');
+                    setOtpCode('');
+                  }}
+                  disabled={isLoading}
+                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-black transition-all shadow-sm hover:shadow-md disabled:opacity-50 flex items-center justify-center shrink-0"
+                  title="Kembali Edit Email"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || otpCode.length !== 6}
+                  className="flex-1 py-3 bg-[#D48C70] hover:bg-[#C27D62] text-white rounded-2xl font-black text-xs sm:text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Verifikasi OTP</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Social Logins */}
-          <div className="mt-4">
+          {authStep === 'email' && (
+            <div className="mt-4">
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-slate-200"></div>
               <span className="flex-shrink-0 mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-wider">Atau masuk dengan</span>
@@ -330,6 +412,7 @@ export default function AuthModal({
               Dengan masuk, kamu menyetujui <a href="/privacy" className="text-pink-500 hover:underline">Kebijakan Privasi</a> dan <a href="/terms" className="text-pink-500 hover:underline">Syarat Layanan</a> kami.
             </p>
           </div>
+          )}
         </div>
       </div>
     </div>
