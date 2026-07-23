@@ -1,30 +1,24 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mail, AlertCircle, Sparkles, Lock, ArrowRight, CheckCircle, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
+import { X, Mail, AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { lockBodyScroll } from '@/lib/scrollLock';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
-
-type AuthMode = 'login' | 'register' | 'magic_link';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  initialMode?: 'login' | 'register';
+  initialMode?: 'login' | 'register'; // Dipertahankan agar tidak error di Header.tsx
 }
 
 export default function AuthModal({
   isOpen,
   onClose,
   onSuccess,
-  initialMode = 'login',
 }: AuthModalProps) {
-  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,10 +34,7 @@ export default function AuthModal({
       setIsRendered(true);
       setTimeout(() => setIsVisible(true), 10);
       
-      setAuthMode(initialMode);
       setEmail('');
-      setPassword('');
-      setShowPassword(false);
       setErrorMsg(null);
       setInfoMsg(null);
       setCaptchaToken(null);
@@ -58,7 +49,7 @@ export default function AuthModal({
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen]);
 
   useEffect(() => {
     return () => lockBodyScroll(false, 'auth');
@@ -108,47 +99,17 @@ export default function AuthModal({
     setIsLoading(true);
 
     try {
-      if (authMode === 'register') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: getRedirectUrl(),
-            captchaToken: captchaToken || undefined,
-          },
-        });
-        if (error) throw error;
-        
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
-          setErrorMsg('Email ini sudah terdaftar. Silakan masuk (login) alih-alih mendaftar.');
-        } else {
-          setInfoMsg('Pendaftaran berhasil! Cek inbox email kamu untuk memverifikasi akun ya. Jangan lupa cek folder spam juga.');
-        }
-      } else if (authMode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-          options: {
-            captchaToken: captchaToken || undefined,
-          }
-        });
-        if (error) throw error;
-        // Success
-        onClose();
-        if (onSuccess) onSuccess();
-        // Force refresh to update user state everywhere
-        window.location.reload();
-      } else if (authMode === 'magic_link') {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: getRedirectUrl(),
-            captchaToken: captchaToken || undefined,
-          },
-        });
-        if (error) throw error;
-        setInfoMsg('Cek inbox email kamu, link login sudah dikirim! Jangan lupa cek folder spam juga ya.');
-      }
+      // Hanya menyisakan Magic Link (OTP)
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: getRedirectUrl(),
+          captchaToken: captchaToken || undefined,
+        },
+      });
+      
+      if (error) throw error;
+      setInfoMsg('Cek inbox email kamu, link login sudah dikirim! Jangan lupa cek folder spam juga ya.');
       
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
@@ -156,11 +117,33 @@ export default function AuthModal({
       setCaptchaToken(null);
       
     } catch (err: any) {
-      if (err.message.includes('Invalid login credentials')) {
-        setErrorMsg('Email atau password salah, coba lagi ya.');
-      } else {
-        setErrorMsg(err.message || 'Terjadi kesalahan saat memproses permintaan.');
+      console.error("Auth error details:", err);
+      
+      let rawMsg = "";
+      if (err && typeof err === "object") {
+        rawMsg = err.message || err.error_description || "";
+        if (!rawMsg && err.error) {
+          rawMsg = typeof err.error === "string" ? err.error : JSON.stringify(err.error);
+        }
+      } else if (typeof err === "string") {
+        rawMsg = err;
       }
+
+      if (!rawMsg || rawMsg === "{}" || rawMsg === "[object Object]") {
+        rawMsg = "Terjadi kendala jaringan. Pastikan koneksi lancar dan tidak diblokir adblocker.";
+      }
+      
+      rawMsg = String(rawMsg); 
+      const lowerMsg = rawMsg.toLowerCase();
+
+      if (lowerMsg.includes('rate limit') || lowerMsg.includes('security purposes') || lowerMsg.includes('too many requests') || lowerMsg.includes('email_rate_limit_exceeded')) {
+        setErrorMsg('Terlalu cepat! Silakan tunggu sekitar 60 detik sebelum mengirim ulang ya.');
+      } else if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('authretryablefetcherror')) {
+        setErrorMsg('Koneksi ke server terputus. Harap matikan Adblocker atau gunakan koneksi lain.');
+      } else {
+        setErrorMsg(rawMsg);
+      }
+
       if (captchaRef.current) {
         captchaRef.current.resetCaptcha();
       }
@@ -181,10 +164,8 @@ export default function AuthModal({
       {/* Modal Card */}
       <div className={`relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-pink-100/50 flex flex-col transition-all duration-300 transform ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-8'}`}>
         
-        {/* Decorative Top Border */}
         <div className="h-2 w-full bg-gradient-to-r from-pink-300 via-pink-400 to-pink-200" />
 
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-5 right-5 z-20 p-2 rounded-full bg-slate-100 hover:bg-pink-50 text-slate-500 hover:text-pink-500 transition-all duration-300 cursor-pointer"
@@ -193,7 +174,6 @@ export default function AuthModal({
           <X className="w-4 h-4" />
         </button>
 
-        {/* Content */}
         <div className="p-8 flex flex-col max-h-[85vh] overflow-y-auto no-scrollbar">
           {/* Header */}
           <div className="text-center mb-6">
@@ -201,10 +181,10 @@ export default function AuthModal({
               <img src="/images/logoNEW.webp" alt="Simoengil Logo" className="w-full h-full object-cover" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight font-heading">
-              {authMode === 'login' ? 'Masuk ke Akun' : authMode === 'register' ? 'Daftar Akun Baru' : 'Masuk Tanpa Sandi'}
+              Masuk ke Akun
             </h2>
             <p className="text-slate-400 text-xs mt-1.5 font-medium leading-relaxed">
-              {authMode === 'login' || authMode === 'register' ? 'Gunakan email dan password kamu.' : 'Kami akan mengirimkan link ajaib ke emailmu.'}
+              Kami akan mengirimkan link ajaib ke emailmu.
             </p>
           </div>
 
@@ -250,36 +230,6 @@ export default function AuthModal({
               </div>
             </div>
 
-            {(authMode === 'login' || authMode === 'register') && (
-              <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Minimal 6 karakter"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:bg-white focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all placeholder:text-slate-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
-                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* hCaptcha Component */}
             {process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY && (
               <div className="flex justify-center py-2 px-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden w-full animate-in fade-in zoom-in-95 duration-200">
@@ -303,36 +253,11 @@ export default function AuthModal({
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {authMode === 'login' ? <LogIn className="w-4 h-4" /> : authMode === 'register' ? <UserPlus className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                  <span>{authMode === 'login' ? 'Masuk' : authMode === 'register' ? 'Daftar Sekarang' : 'Kirim Link Login'}</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Kirim Link Login</span>
                 </>
               )}
             </button>
-
-            {/* Toggle Modes */}
-            <div className="flex flex-col gap-2.5 pt-2 text-center text-xs font-bold text-slate-500">
-              {authMode === 'login' && (
-                <>
-                  <button type="button" onClick={() => { setAuthMode('register'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors">
-                    Belum punya akun? <span className="text-pink-500">Daftar di sini</span>
-                  </button>
-                  <button type="button" onClick={() => { setAuthMode('magic_link'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors text-[11px] font-medium mt-1">
-                    Lupa password? Masuk pakai link email sebagai gantinya
-                  </button>
-                </>
-              )}
-              {authMode === 'register' && (
-                <button type="button" onClick={() => { setAuthMode('login'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors">
-                  Sudah punya akun? <span className="text-pink-500">Masuk di sini</span>
-                </button>
-              )}
-              {authMode === 'magic_link' && (
-                <button type="button" onClick={() => { setAuthMode('login'); setErrorMsg(null); setInfoMsg(null); }} className="hover:text-pink-600 transition-colors flex items-center justify-center gap-1">
-                  <ArrowRight className="w-3 h-3 rotate-180" /> Kembali ke Login Password
-                </button>
-              )}
-            </div>
-
           </form>
 
           {/* Social Logins */}
