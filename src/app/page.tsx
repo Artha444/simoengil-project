@@ -356,18 +356,21 @@ export default function Home() {
           .select("*")
           .eq("id", "homepage")
           .single();
-        if (!error && data) {
+          
+        if (!error && data && data.settings) {
           setSiteSettings((prev) => ({
             ...prev,
-            ...(data.settings || {}),
+            ...data.settings,
           }));
+          // Update the stale local cache with fresh data from DB
+          localStorage.setItem("simoengil_settings", JSON.stringify(data.settings));
+          return; // Exit early since we got fresh data
         }
       } catch (err) {
-        // Silently catch error, we will fallback to localStorage below
-        console.log("Using local settings fallback");
+        console.log("Supabase fetch error, falling back to local cache.");
       }
 
-      // Always load local defaults if available as fallback or overlay
+      // Fallback: only runs if DB fetch failed or returned nothing
       const local = localStorage.getItem("simoengil_settings");
       if (local) {
         try {
@@ -485,8 +488,9 @@ export default function Home() {
         .upsert({ id: "homepage", settings: newSettings });
 
       if (error) throw error;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save settings:", err);
+      alert("Gagal menyimpan ke server Supabase: " + (err.message || err.toString()));
       // Silently fail — localStorage cache still works for the session
     }
   };
